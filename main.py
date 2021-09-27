@@ -49,14 +49,35 @@ async def post(ctx):
     author = ctx.author
     guild = ctx.guild
 
+    membership = guild.get_role(823153343958351902)
+    end = guild.get_role(842154406258147405)
+
+    fa = True
+
+    for r in guild.roles:
+        if r in author.roles:
+            if r.position < end.position and r.position > membership.position:
+                fa = False
+
     free_agency = guild.get_channel(892078400250974229)
 
     embed = discord.Embed(title="Check your DMs!", description= "Check your DMs and answer thew questions asked.", colour= discord.Colour.blue())
 
-    await ctx.create_response(
-        embed= embed,
-        ephemeral = True
-    )
+    if fa:
+        await ctx.create_response(
+            embed= embed,
+            ephemeral = True
+        )
+    if not fa:
+        embed.title = "You must be a Free Agent to use this command."
+        embed.description = ""
+
+        await ctx.create_response(
+            embed= embed,
+            ephemeral = True
+        )
+
+        return
 
     embed = discord.Embed(title="Free Agency Post", colour= discord.Colour.blue())
 
