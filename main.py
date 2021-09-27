@@ -44,6 +44,173 @@ with open('stuff.json', "r") as f:
 token = config.get('token')
 """
 
+@bot.event
+async def on_message(msg):
+  if(msg.channel.id == 823190123046371379):
+    #return
+    global coach
+    coach = False
+    roleId = 0
+
+    membership = msg.guild.get_role(823153343958351902)
+    end = msg.guild.get_role(842154406258147405)
+
+    for x in msg.author.roles:
+      if x.id == 823191636149534751 or x.id == 823191733273493504 or x.id == 823191767457202226:
+        coach = True
+        roleId = x.id
+
+    if not coach:
+      return
+
+    emoji = re.findall(r'<:\w*:\d*>', msg.content)
+    emoji = [int(e.split(':')[2].replace('>', '')) for e in emoji]
+    emoji = [discord.utils.get(msg.guild.emojis, id=e) for e in emoji]
+    emoji = emoji[0]
+
+    global role
+
+    players = msg.mentions
+
+    if len(players) <= 0:
+      return
+
+    args = msg.content.split(' ')
+
+    if len(args) <= 2:
+      return
+
+
+    for x in msg.guild.roles:
+      if x.name.endswith(emoji.name):
+          if x.position < end.position and x.position > membership.position:
+            role = x
+            break
+    
+    if role:
+      if not role in msg.author.roles:
+        return
+
+      embed= discord.Embed(title= "{}".format(role.name), description= "Transaction for {}.".format(role.name), colour= discord.Colour.green())
+
+      eligible = []
+
+      
+      for x in players:
+        if not x.bot:
+
+          if args[1].lower() == "promote" or args[1].lower() == "demote":
+            eligible.append(x)
+          else:
+            if not msg.author == x:
+              teams = []
+              if not args[1].lower() == "release":
+                for r in x.roles:
+                  if r.position < end.position and r.position > membership.position:
+                    teams.append(r)
+                
+                if len(teams) == 0:
+                  eligible.append(x)
+              else:
+                  eligible.append(x)
+
+        
+      
+
+      if len(eligible) == 0:
+        embed.add_field(name= "``Error``", value= "Unable to sign the players mentioned. They may already be signed to a team. If you tried using the command on yourself, this is not allowed.")
+        embed.colour = discord.Colour.red()
+
+        await msg.channel.send(embed= embed)
+
+        return
+
+
+      if args[1].lower() == "sign":
+        roled = ""
+        capped = ""
+        for x in eligible:
+          if len(role.members) < 20:
+            await x.add_roles(role)
+            roled += x.mention+", "
+          else:
+            capped += x.mention+", "
+        
+        embed.add_field(name="``Added the following players``", value= roled, inline=False)
+        if len(capped) > 0:
+          embed.add_field(name= "``Unable to sign the following players due to player cap``", value= capped)
+        embed.add_field(name= "``Team Size``", value= len(role.members))
+
+      elif args[1].lower() == "release":
+        roled = ""
+        for x in eligible:
+          await x.remove_roles(role)
+          roled += x.mention+", "
+
+          await x.remove_roles(msg.guild.get_role(823191733273493504))
+          await x.remove_roles(msg.guild.get_role(823191767457202226))
+        
+        embed.add_field(name="``Removed the following players``", value= roled, inline=False)
+      
+      elif args[1].lower() == "promote" or args[1].lower() == "demote":
+        if not role in eligible[0].roles:
+          return
+
+        if not roleId == 823191636149534751:
+          embed.colour = discord.Colour.red()
+          embed.add_field(name= "``Missing Permission``", value= "Only Team Owners may promote/demote players.")
+
+          await msg.channel.send(embed= embed)
+          return
+        if len(args) >= 4:
+          if args[3].lower() == "hc":
+            await eligible[0].add_roles(msg.guild.get_role(823191733273493504))
+            await eligible[0].remove_roles(msg.guild.get_role(823191767457202226))
+
+            embed.add_field(name="``Promoted the following player to Head Coach``", value= eligible[0].mention, inline=False)
+          elif args[3].lower() == "ac":
+            await eligible[0].add_roles(msg.guild.get_role(823191767457202226))
+            await eligible[0].remove_roles(msg.guild.get_role(823191733273493504))
+
+            embed.add_field(name="``Promoted the following player to Assistant Coach``", value= eligible[0].mention, inline=False)
+          else:
+            await eligible[0].remove_roles(msg.guild.get_role(823191733273493504))
+            await eligible[0].remove_roles(msg.guild.get_role(823191767457202226))
+
+            embed.add_field(name="``Demoted the following player from coaching``", value= eligible[0].mention, inline=False)
+        else:
+          await eligible[0].remove_roles(msg.guild.get_role(823191733273493504))
+          await eligible[0].remove_roles(msg.guild.get_role(823191767457202226))
+
+          embed.add_field(name="``Demoted the following player from coaching``", value= eligible[0].mention, inline=False)
+      else:
+        if not roleId == 823191636149534751:
+          embed.colour = discord.Colour.red()
+          embed.add_field(name= "``Error``", value= "Sorry but I did not understand what transaction type this message was. Please follow the format: \"<emoji> (sign/release/promote/demote) <mentions of player(s)> (HC/AC, if applicable)\"")
+
+    await msg.channel.send(embed= embed)
+          
+
+
+      
+
+  if(msg.channel.id == 831301127713849384):
+    if (msg.content.startswith('<:twitter:831307974533316648>')):
+      verified =  True
+      for role in msg.author.roles:
+        if role.id == 823156809795633154:
+          verified =  False
+      
+      if verified:
+        await msg.add_reaction('<:verified:831316205745733672>')
+      
+      await msg.add_reaction('❤️')
+      await msg.add_reaction('<:repost:831318107574370365>')
+      
+    else:
+      await msg.delete()
+  await bot.process_commands(msg)
+
 @int_bot.slash_command()
 async def post(ctx):
     author = ctx.author
