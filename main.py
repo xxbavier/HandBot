@@ -8,18 +8,20 @@ from dislash import InteractionClient, ActionRow, Button, ButtonStyle, SelectMen
 from dislash.interactions.message_components import Component
 
 
-import keep_alive
 import json
 from itertools import cycle
 import sqlite3
 import math
 
+from os import environ
+from flask import Flask
+
+app = Flask(__name__)
+app.run(environ.get('PORT'))
+
 # Initiate
-keep_alive.keep_alive()
 
 intents = discord.Intents().all()
-
-#guild_ids=[885265675365548112]
 
 with open('config.json') as f:
   config = json.load(f)
