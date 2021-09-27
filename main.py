@@ -1,4 +1,5 @@
 from datetime import time
+import re
 from aiohttp.client_reqrep import ContentDisposition
 import discord
 from discord import player
@@ -42,6 +43,95 @@ with open('stuff.json', "r") as f:
     config = json.loads(f.read())
 token = config.get('token')
 """
+
+@int_bot.slash_command()
+async def post(ctx):
+    author = ctx.author
+    guild = ctx.guild
+
+    free_agency = guild.get_channel(892078400250974229)
+
+    embed = discord.Embed(title="Check your DMs!", description= "Check your DMs and answer thew questions asked.", colour= discord.Colour.blue())
+
+    await ctx.create_response(
+        embed= embed,
+        ephemeral = True
+    )
+
+    embed = discord.Embed(title="Free Agency Post", colour= discord.Colour.blue())
+
+    msg = await author.send(
+        content= "***What positions do you play?***",
+        embed= embed
+    )
+
+    def check(m):
+        return m.author == author and m.channel == msg.channel
+
+    m = await bot.wait_for('message', check=check, timeout=180.0)
+    
+    embed.add_field(name= "``Positions``", value= m.content, inline= False)
+
+    await author.send(
+        content= "***What are your pros?***",
+        embed= embed
+    )
+
+    m = await bot.wait_for('message', check=check, timeout=180.0)
+
+    embed.add_field(name= "``Pros``", value= m.content, inline= False)
+
+    await author.send(
+        content= "***What are your cons?***",
+        embed= embed
+    )
+
+    m = await bot.wait_for('message', check=check, timeout=180.0)
+
+    embed.add_field(name= "``Cons``", value= m.content, inline= False)
+
+    await author.send(
+        content= "***Is there anything else you'd like to say?***",
+        embed= embed
+    )
+
+    m = await bot.wait_for('message', check=check, timeout=180.0)
+
+    embed.add_field(name= "``Extra``", value= m.content, inline= False)
+
+    msg = await author.send(
+        content= "***Does everything here look ok?***",
+        embed= embed
+    )
+
+    await msg.add_reaction('✅')
+    await msg.add_reaction('❌')
+
+    def check(reaction, user):
+        return user == author and (str(reaction.emoji) == '✅' or str(reaction.emoji) == '❌')
+
+    reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+
+    if str(reaction.emoji) == '✅':
+        await author.send(
+            content= "***Posting...***"
+        )
+
+        embed.add_field(name= "``Contact``", value= author.mention)
+
+        await free_agency.send(
+            embed= embed
+        )
+    elif str(reaction.emoji) == '❌':
+        await author.send(
+            content= "***Cancelled...***"
+        )
+
+        return
+
+
+
+
 
 @int_bot.slash_command(description= "Submit your game time.")
 async def gametime(inter):
