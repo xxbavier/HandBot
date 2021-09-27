@@ -7,14 +7,14 @@ from discord.utils import parse_time
 from dislash import InteractionClient, ActionRow, Button, ButtonStyle, SelectMenu, SelectOption, ContextMenuInteraction, Option, OptionType
 from dislash.interactions.message_components import Component
 
-
+import keep_alive
 import json
 from itertools import cycle
 import sqlite3
 import math
 
 # Initiate
-
+keep_alive.keep_alive()
 intents = discord.Intents().all()
 
 with open('config.json') as f:
