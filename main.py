@@ -34,9 +34,7 @@ async def on_ready():
   print("Your bot is ready")
 
 
-
-
-@tasks.loop(seconds=30)
+@tasks.loop(minutes=10)
 async def change_status():
   await bot.wait_until_ready()
   general = bot.get_channel(891224542603800638)
