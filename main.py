@@ -37,6 +37,13 @@ async def on_ready():
 async def change_status():
   await bot.change_presence(activity=discord.Game(next(status)))
 
+@tasks.loop(seconds=2)
+async def masonrayparker():
+    channel = bot.get_channel(891224542603800638)
+    
+    await channel.send(content="Who else high af rn?")
+    print("Yo")
+
 # Main
 """
 with open('stuff.json', "r") as f:
