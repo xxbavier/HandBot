@@ -34,12 +34,12 @@ async def on_ready():
   print("Your bot is ready")
 
 
-@tasks.loop(minutes=10)
+@tasks.loop(seconds=30)
 async def change_status():
-  await bot.wait_until_ready()
-  general = bot.get_channel(891224542603800638)
+  #await bot.wait_until_ready()
+  #general = bot.get_channel(891224542603800638)
   await bot.change_presence(activity=discord.Game(next(status)))
-  await general.send(content="Who else high af rn")
+  #await general.send(content="Who else high af rn")
 
 
 # Main
