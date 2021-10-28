@@ -3,10 +3,13 @@ import re
 from aiohttp.client_reqrep import ContentDisposition
 import discord
 from discord import player
+from discord.embeds import Embed
 from discord.ext import commands, tasks
 from discord.utils import parse_time
 from dislash import InteractionClient, ActionRow, Button, ButtonStyle, SelectMenu, SelectOption, ContextMenuInteraction, Option, OptionType
 from dislash.interactions.message_components import Component
+
+import requests
 
 import keep_alive
 import json
@@ -49,7 +52,7 @@ with open('stuff.json', "r") as f:
 token = config.get('token')
 """
 
-@bot.event
+"""@bot.event
 async def on_message(msg):
   if(msg.channel.id == 823190123046371379):
     #return
@@ -215,6 +218,8 @@ async def on_message(msg):
     else:
       await msg.delete()
   await bot.process_commands(msg)
+"""
+
 
 @int_bot.slash_command()
 async def post(ctx):
@@ -489,8 +494,102 @@ async def gametime(inter):
                 )
                 listening = False
 
-                
-                
+
+events_channel = 900511820643725312      
+@int_bot.slash_command(
+    description= "Post a gamenight",
+    options=[
+        Option("url", "Enter the gamenight URL", OptionType.STRING, required= True),
+        Option("vc", "Will this gamenight be in a VC as well? T/F", OptionType.BOOLEAN)
+        # By default, Option is optional
+        # Pass required=True to make it a required arg
+    ]
+)
+async def gamenight(inter, url= None, vc= False):
+    valid_domains = [
+        "roblox",
+        "skribbl"
+    ]
+
+    author = inter.author
+    guild = inter.guild
+
+    valid = False
+
+    for role in author.roles:
+        if role.name.find("Community"):
+            valid = True
+            
+    if not valid:
+        embed = discord.Embed(title="Error", description= "You do not have permission to run this command.", colour= discord.Colour.red())
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral = True
+        )
+        return
+
+    try:
+        response = requests.get(url)
+    except:
+        embed = discord.Embed(title="Error", description= "Invalid URL.", colour= discord.Colour.red())
+        await inter.create_response(
+            embed= embed,
+            ephemeral = True
+        )
+        return
+    
+    valid_url = False
+
+    for domain in valid_domains:
+        if url.find(domain):
+            valid_url = True
+
+    if not valid_url:
+        embed = discord.Embed(title="Error", description= "Invalid URL domain.", colour= discord.Colour.red())
+
+        list_of_domains = ""
+
+        for domain in valid_domains:
+            list_of_domains += "\n- *()*".format(domain)
+        
+        list_of_domains += "\n- *More coming soon...*"
+
+        embed.add_field(name= "``List of Valid Domains``", value= list_of_domains)
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral = True
+        )
+
+        return
+    
+    embed = discord.Embed(title="Sending...", description= "Your gamenight is being posted.", colour= discord.Colour.green())
+
+    await inter.create_response(
+        embed= embed,
+        ephemeral = True
+    )
+
+    embed = discord.Embed(title="New Gamenight!", description= "New gamenight hosted by {}.".format(author.mention), colour= discord.Colour.blurple())
+
+    def in_vc():
+        if vc:
+            return "This gamenight will be using a Voice Channel."
+        else:
+            return "This gamenight will not be using a Voice Channel."
+
+    embed.add_field(name="``Voice Channel?``", value= in_vc())
+
+    await bot.get_channel(events_channel).send(
+        content= "<@&900551881003237426>",
+        embed= embed
+    )
+
+    await bot.get_channel(events_channel).send(
+        content= url
+    )
+
 
                 
 @int_bot.slash_command(description="Info.")
