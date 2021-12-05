@@ -26,7 +26,7 @@ with open('config.json') as f:
 token = config.get('token')
 
 bot = commands.Bot(command_prefix=("?"), intents= intents)
-int_bot = InteractionClient(bot, test_guilds=[885265675365548112, 823037558027321374], modify_send= True)
+int_bot = InteractionClient(bot, test_guilds=[823037558027321374, 909153380268650516], modify_send= True)
 
 status = cycle(['Handball','Xavs Simulator'])
 
@@ -52,19 +52,19 @@ with open('stuff.json', "r") as f:
 token = config.get('token')
 """
 
-"""@bot.event
+@bot.event
 async def on_message(msg):
-  if(msg.channel.id == 823190123046371379):
+  if(msg.channel.id == 917102767208816680):
     #return
     global coach
     coach = False
     roleId = 0
 
-    membership = msg.guild.get_role(823153343958351902)
-    end = msg.guild.get_role(842154406258147405)
+    membership = msg.guild.get_role(917043822402338886)
+    end = msg.guild.get_role(917043508509032508)
 
     for x in msg.author.roles:
-      if x.id == 823191636149534751 or x.id == 823191733273493504 or x.id == 823191767457202226:
+      if x.id == 917068655928442930 or x.id == 917068674626646027 or x.id == 917068697334595664:
         coach = True
         roleId = x.id
 
@@ -76,7 +76,7 @@ async def on_message(msg):
     emoji = [discord.utils.get(msg.guild.emojis, id=e) for e in emoji]
     emoji = emoji[0]
 
-    global role
+    role = None
 
     players = msg.mentions
 
@@ -155,8 +155,8 @@ async def on_message(msg):
           await x.remove_roles(role)
           roled += x.mention+", "
 
-          await x.remove_roles(msg.guild.get_role(823191733273493504))
-          await x.remove_roles(msg.guild.get_role(823191767457202226))
+          await x.remove_roles(msg.guild.get_role(917068674626646027))
+          await x.remove_roles(msg.guild.get_role(917068697334595664))
         
         embed.add_field(name="``Removed the following players``", value= roled, inline=False)
       
@@ -164,7 +164,7 @@ async def on_message(msg):
         if not role in eligible[0].roles:
           return
 
-        if not roleId == 823191636149534751:
+        if not roleId == 917068655928442930:
           embed.colour = discord.Colour.red()
           embed.add_field(name= "``Missing Permission``", value= "Only Team Owners may promote/demote players.")
 
@@ -172,27 +172,27 @@ async def on_message(msg):
           return
         if len(args) >= 4:
           if args[3].lower() == "hc":
-            await eligible[0].add_roles(msg.guild.get_role(823191733273493504))
-            await eligible[0].remove_roles(msg.guild.get_role(823191767457202226))
+            await eligible[0].add_roles(msg.guild.get_role(917068674626646027))
+            await eligible[0].remove_roles(msg.guild.get_role(917068697334595664))
 
             embed.add_field(name="``Promoted the following player to Head Coach``", value= eligible[0].mention, inline=False)
           elif args[3].lower() == "ac":
-            await eligible[0].add_roles(msg.guild.get_role(823191767457202226))
-            await eligible[0].remove_roles(msg.guild.get_role(823191733273493504))
+            await eligible[0].add_roles(msg.guild.get_role(917068697334595664))
+            await eligible[0].remove_roles(msg.guild.get_role(917068674626646027))
 
             embed.add_field(name="``Promoted the following player to Assistant Coach``", value= eligible[0].mention, inline=False)
           else:
-            await eligible[0].remove_roles(msg.guild.get_role(823191733273493504))
-            await eligible[0].remove_roles(msg.guild.get_role(823191767457202226))
+            await eligible[0].remove_roles(msg.guild.get_role(917068697334595664))
+            await eligible[0].remove_roles(msg.guild.get_role(917068674626646027))
 
             embed.add_field(name="``Demoted the following player from coaching``", value= eligible[0].mention, inline=False)
         else:
-          await eligible[0].remove_roles(msg.guild.get_role(823191733273493504))
-          await eligible[0].remove_roles(msg.guild.get_role(823191767457202226))
+          await eligible[0].remove_roles(msg.guild.get_role(917068697334595664))
+          await eligible[0].remove_roles(msg.guild.get_role(917068674626646027))
 
           embed.add_field(name="``Demoted the following player from coaching``", value= eligible[0].mention, inline=False)
       else:
-        if not roleId == 823191636149534751:
+        if not roleId == 917068655928442930:
           embed.colour = discord.Colour.red()
           embed.add_field(name= "``Error``", value= "Sorry but I did not understand what transaction type this message was. Please follow the format: \"<emoji> (sign/release/promote/demote) <mentions of player(s)> (HC/AC, if applicable)\"")
 
@@ -202,7 +202,7 @@ async def on_message(msg):
 
       
 
-  if(msg.channel.id == 831301127713849384):
+  if(msg.channel.id == 917103851092476074):
     if (msg.content.startswith('<:twitter:831307974533316648>')):
       verified =  True
       for role in msg.author.roles:
@@ -218,7 +218,6 @@ async def on_message(msg):
     else:
       await msg.delete()
   await bot.process_commands(msg)
-"""
 
 
 @int_bot.slash_command()
@@ -226,8 +225,8 @@ async def post(ctx):
     author = ctx.author
     guild = ctx.guild
 
-    membership = guild.get_role(823153343958351902)
-    end = guild.get_role(842154406258147405)
+    membership = guild.get_role(917043822402338886)
+    end = guild.get_role(917043508509032508)
 
     fa = True
 
@@ -236,7 +235,7 @@ async def post(ctx):
             if r.position < end.position and r.position > membership.position:
                 fa = False
 
-    free_agency = guild.get_channel(892078400250974229)
+    free_agency = guild.get_channel(917102894522716230)
 
     embed = discord.Embed(title="Check your DMs!", description= "Check your DMs and answer thew questions asked.", colour= discord.Colour.blue())
 
@@ -334,9 +333,9 @@ async def post(ctx):
 @int_bot.slash_command(description= "Submit your game time.")
 async def gametime(inter):
     def check(user):
-        to = inter.guild.get_role(823191636149534751)
-        hc = inter.guild.get_role(823191733273493504)
-        ac = inter.guild.get_role(823191767457202226)
+        to = inter.guild.get_role(917068655928442930)
+        hc = inter.guild.get_role(917068674626646027)
+        ac = inter.guild.get_role(917068697334595664)
 
         if to in user.roles or hc in user.roles or ac in user.roles:
             return True
@@ -346,9 +345,9 @@ async def gametime(inter):
     author = inter.author
 
     if check(author):
-        guild = await bot.fetch_guild(823037558027321374)
+        guild = await bot.fetch_guild(909153380268650516)
 
-        channel = guild.get_channel(891550181269598219)
+        channel = guild.get_channel(917109847709859920)
 
         membership = guild.get_role(823153343958351902)
         end = guild.get_role(842154406258147405)
@@ -597,7 +596,7 @@ async def information(inter):
     author = inter.author
     guild = inter.guild
 
-    if not guild.get_role(823138967251189840) in author.roles:
+    if not guild.get_role(910373792176554016) in author.roles:
         return
 
     # INFORMATION #
@@ -630,8 +629,8 @@ async def information(inter):
 
     embed = discord.Embed(title="Team Coaches", description= "Select a team below to view a list of their Team Coaches.", colour= discord.Colour.blue())
 
-    membership = guild.get_role(823153343958351902)
-    end = guild.get_role(842154406258147405)
+    membership = guild.get_role(917043822402338886)
+    end = guild.get_role(917043508509032508)
     opts = []
 
     for r in guild.roles:
@@ -644,7 +643,12 @@ async def information(inter):
                             em = e
                     except:
                         continue
-                option = SelectOption(label=r.name, value=json.dumps([str(em.name), str(r.name)]), emoji=str(em))
+                
+                option = None
+                try:
+                    option = SelectOption(label=r.name, value=json.dumps([str(em.name), str(r.name)]), emoji=str(em))
+                except:
+                    option = SelectOption(label=r.name, value=json.dumps(["", str(r.name)]))
                 opts.append(option)
 
 
@@ -663,8 +667,6 @@ async def information(inter):
     # MEMBERS #
 
     opts = []
-    membership = guild.get_role(823153343958351902)
-    end = guild.get_role(842154406258147405)
 
     for r in guild.roles:
         if not r in author.roles:
@@ -676,7 +678,12 @@ async def information(inter):
                             em = e
                     except:
                         continue
-                option = SelectOption(label=r.name, value=json.dumps([str(em.name), str(r.name)]), emoji=str(em))
+                
+                option = None
+                try:
+                    option = SelectOption(label=r.name, value=json.dumps([str(em.name), str(r.name)]), emoji=str(em))
+                except:
+                    option = SelectOption(label=r.name, value=json.dumps(["", str(r.name)]))
                 opts.append(option)
 
     action = SelectMenu(
@@ -693,6 +700,17 @@ async def information(inter):
         components = [action]
     )
 
+    # REACTION ROLES #
+
+    embed = discord.Embed(title="Roles", description= "Gain roles by reacting with the respective emoji.", colour= discord.Colour.blue())
+    embed.add_field(name= "🚫 ``Disable Partnerships``", value= "*React using the 🚫 emoji to DISABLE the partnerships channel and its notifications.*", inline= False)
+    embed.add_field(name= "📺 ``Disable Streams``", value= "*React using the 📺 emoji to DISABLE the streams channel and its notifications.*", inline= False)
+    embed.add_field(name= "🤾 ``Enable Pickups``", value= "*React using the 🤾 emoji to ENABLE the pickups channel and its notifications.*", inline= False)
+    embed.add_field(name= "🎮 ``Enable Gamenights``", value= "*React using the 🎮 emoji to ENABLE the gamenights channel and its notifications.*", inline= False)
+
+    await inter.channel.send(
+        embed = embed
+    )
     
 """    
 @int_bot.slash_command(
@@ -736,11 +754,11 @@ async def on_dropdown(inter: int_bot):
         embed.add_field(name= "``# of Members``", value= "{} members.".format(len(role.members)), inline= False)
 
         for x in role.members:
-            if guild.get_role(823191636149534751) in x.roles:
+            if guild.get_role(917068655928442930) in x.roles:
                 embed.add_field(name= "``Team Owner``", value= x.mention + "({})".format(x.name + "#" + x.discriminator))
-            elif guild.get_role(823191733273493504) in x.roles:
+            elif guild.get_role(917068674626646027) in x.roles:
                 embed.add_field(name= "``Head Coach``", value= x.mention + "({})".format(x.name + "#" + x.discriminator))
-            elif guild.get_role(823191767457202226) in x.roles:
+            elif guild.get_role(917068697334595664) in x.roles:
                 embed.add_field(name= "``Assistant Coach``", value= x.mention + "({})".format(x.name + "#" + x.discriminator))
             else:
                 embed.add_field(name= "``Member``", value= x.mention + "({})".format(x.name + "#" + x.discriminator))
@@ -770,11 +788,11 @@ async def on_dropdown(inter: int_bot):
         embed = discord.Embed(title= team.name, colour= team.colour)
 
         for x in team.members:
-            if guild.get_role(823191636149534751) in x.roles:
+            if guild.get_role(917068655928442930) in x.roles:
                 embed.add_field(name= "``Team Owner``", value= x.mention + "({})".format(x.name + "#" + x.discriminator), inline=False)
-            elif guild.get_role(823191733273493504) in x.roles:
+            elif guild.get_role(917068674626646027) in x.roles:
                 embed.add_field(name= "``Head Coach``", value= x.mention + "({})".format(x.name + "#" + x.discriminator), inline=False)
-            elif guild.get_role(823191767457202226) in x.roles:
+            elif guild.get_role(917068697334595664) in x.roles:
                 embed.add_field(name= "``Assistant Coach``", value= x.mention + "({})".format(x.name + "#" + x.discriminator), inline=False)
 
         await inter.create_response(
