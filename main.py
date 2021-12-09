@@ -220,6 +220,19 @@ async def on_message(msg):
   await bot.process_commands(msg)
 
 
+#@int_bot.slash_command()
+async def changething(ctx):
+    channels = ctx.guild.channels
+
+    for channel in channels:
+        if channel.name.find("》"):
+            print("Found symbol")
+            oldname = channel.name
+            newname = oldname.replace("》", "┃")
+            await channel.edit(name=newname)
+        else:
+            print("Didnt find symbol")
+
 @int_bot.slash_command()
 async def post(ctx):
     author = ctx.author
