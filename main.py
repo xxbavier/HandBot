@@ -138,7 +138,7 @@ async def on_message(msg):
         roled = ""
         capped = ""
         for x in eligible:
-          if len(role.members) < 20:
+          if len(role.members) < 16:
             await x.add_roles(role)
             roled += x.mention+", "
           else:
@@ -198,10 +198,6 @@ async def on_message(msg):
 
     await msg.channel.send(embed= embed)
           
-
-
-      
-
   if(msg.channel.id == 917103851092476074):
     if (msg.content.startswith('<:twitter:831307974533316648>')):
       verified =  True
@@ -507,6 +503,37 @@ async def gametime(inter):
                 listening = False
 
 
+#@int_bot.slash_command()
+async def updateinfo(inter, url= None, vc= False):
+    info_channel = bot.get_channel(914703851800649769)
+    info = await info_channel.fetch_message(917106041106366514)
+
+    ## INFORMTATION ##
+    embed = discord.Embed(title="Information", description= "Welcome to the *Handball: The League* information channel. This is where you can find important documents and resources for the league.\n\nTo access the resources, please select an option from the dropdown below.", colour= discord.Colour.blue())
+
+    action = SelectMenu(
+        custom_id="information",
+        placeholder="Select an option.",
+        max_values=1,
+        options=[
+            SelectOption(label= "Vanity Link", value="https://discord.gg/handball"),
+            SelectOption(label= "Rulebook", value="https://docs.google.com/document/d/1VXrPnWmtphGJW8j6uFuSDvTo7sT5_x0NgW5hjICvybI/edit?usp=sharing"),
+            SelectOption(label= "Statistics", value="https://docs.google.com/spreadsheets/d/1TFaIAtaDMKAm-9CsTuVd8qcATVSr8ZrFKSFbgJR4F0U/edit?usp=sharing"),
+            SelectOption(label= "Handball Association v1.16", value= "https://www.roblox.com/games/7521555382/HBA-1-16"),
+            SelectOption(label= "Main Game", value= "https://www.roblox.com/games/5498056786/Handball-Association"),
+            SelectOption(label= "League Group", value= "https://www.roblox.com/groups/10195697/Handball-The-League#!/about"),
+            SelectOption(label= "Team Owner Sign-Up", value= "https://forms.gle/s9qfRhkMPmU5XnVe6"),
+            SelectOption(label= "Events Game", value= "https://www.roblox.com/games/6732385646/Handball-The-League"),
+            SelectOption(label= "League YouTube", value= "https://www.youtube.com/channel/UCXdF-Z0u2NNiVNLjf1Oq2HA")
+        ]
+    )
+
+    await info.edit(
+        embed = embed,
+
+        components=None
+    )
+
 events_channel = 900511820643725312      
 @int_bot.slash_command(
     description= "Post a gamenight",
@@ -621,9 +648,9 @@ async def information(inter):
         placeholder="Select an option.",
         max_values=1,
         options=[
-            SelectOption(label="Vanity Link", value="https://discord.gg/handball"),
-            SelectOption(label="Rulebook", value="https://docs.google.com/document/d/1VXrPnWmtphGJW8j6uFuSDvTo7sT5_x0NgW5hjICvybI/edit?usp=sharing"),
-            SelectOption(label="Statistics", value="https://docs.google.com/spreadsheets/d/1TFaIAtaDMKAm-9CsTuVd8qcATVSr8ZrFKSFbgJR4F0U/edit?usp=sharing"),
+            SelectOption(label= "Vanity Link", value="https://discord.gg/handball"),
+            SelectOption(label= "Rulebook", value="https://docs.google.com/document/d/1VXrPnWmtphGJW8j6uFuSDvTo7sT5_x0NgW5hjICvybI/edit?usp=sharing"),
+            SelectOption(label= "Statistics", value="https://docs.google.com/spreadsheets/d/1TFaIAtaDMKAm-9CsTuVd8qcATVSr8ZrFKSFbgJR4F0U/edit?usp=sharing"),
             SelectOption(label= "Handball Association v1.16", value= "https://www.roblox.com/games/7521555382/HBA-1-16"),
             SelectOption(label= "Main Game", value= "https://www.roblox.com/games/5498056786/Handball-Association"),
             SelectOption(label= "League Group", value= "https://www.roblox.com/groups/10195697/Handball-The-League#!/about"),
