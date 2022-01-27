@@ -1,7 +1,5 @@
 from datetime import time
 from email import message
-import re
-from tkinter.tix import Tree
 from urllib import response
 from aiohttp.client_reqrep import ContentDisposition
 import discord
