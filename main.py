@@ -1,5 +1,8 @@
 from datetime import time
+from email import message
 import re
+from tkinter.tix import Tree
+from urllib import response
 from aiohttp.client_reqrep import ContentDisposition
 import discord
 from discord import player
@@ -8,8 +11,6 @@ from discord.ext import commands, tasks
 from discord.utils import parse_time
 from dislash import InteractionClient, ActionRow, Button, ButtonStyle, SelectMenu, SelectOption, ContextMenuInteraction, Option, OptionType
 from dislash.interactions.message_components import Component
-
-import requests
 
 import keep_alive
 import json
@@ -30,6 +31,65 @@ int_bot = InteractionClient(bot, test_guilds=[823037558027321374, 90915338026865
 
 status = cycle(['Handball','Xavs Simulator'])
 
+transactions_enabled = True
+
+transactions_id = 917102767208816680
+
+teamOwner = 917068655928442930
+headCoach = 917068674626646027
+assistantCoach = 917068697334595664
+
+def coachCheck(user, htl):
+    '''
+    Returns coaching level of a member.
+
+    Returns 3 if user is a Team Owner.
+    Returns 2 if user is an Head Coach.
+    Returns 1 if user is an Assistant Coach.
+    Returns 0 if user is not a coach.
+    '''
+
+    if htl.get_role(teamOwner) in user.roles:
+        return 3
+    
+    elif htl.get_role(headCoach) in user.roles:
+        return 2
+
+    elif htl.get_role(assistantCoach) in user.roles:
+        return 1
+    
+    return 0
+
+def teamCheck(user, htl):
+    '''
+    Checks to see if a player is on a valid team.
+    
+    Returns True if player is on a team.
+    Returns False if player is not on a team.
+    '''
+
+    membership = htl.get_role(917043822402338886)
+    end = htl.get_role(917043508509032508)
+
+    onTeam = False
+    teamRole = None
+
+    for x in user.roles:
+        if x.position < end.position and x.position > membership.position:
+            onTeam = True
+            teamRole = x
+            break
+        else:
+            onTeam = False
+        
+    return [onTeam, teamRole]
+
+
+def error(command, reason):
+    embed = discord.Embed(title="ERROR", description= "There was an error while executing this command.", colour= discord.Colour.red())
+    embed.add_field(name="``Reason``", value=reason)
+
+    return embed
 
 @int_bot.event
 async def on_ready():
@@ -54,150 +114,6 @@ token = config.get('token')
 
 @bot.event
 async def on_message(msg):
-  if(msg.channel.id == 917102767208816680):
-    #return
-    global coach
-    coach = False
-    roleId = 0
-
-    membership = msg.guild.get_role(917043822402338886)
-    end = msg.guild.get_role(917043508509032508)
-
-    for x in msg.author.roles:
-      if x.id == 917068655928442930 or x.id == 917068674626646027 or x.id == 917068697334595664:
-        coach = True
-        roleId = x.id
-
-    if not coach:
-      return
-
-    emoji = re.findall(r'<:\w*:\d*>', msg.content)
-    emoji = [int(e.split(':')[2].replace('>', '')) for e in emoji]
-    emoji = [discord.utils.get(msg.guild.emojis, id=e) for e in emoji]
-    emoji = emoji[0]
-
-    role = None
-
-    players = msg.mentions
-
-    if len(players) <= 0:
-      return
-
-    args = msg.content.split(' ')
-
-    if len(args) <= 2:
-      return
-
-
-    for x in msg.guild.roles:
-      if x.name.endswith(emoji.name):
-          if x.position < end.position and x.position > membership.position:
-            role = x
-            break
-    
-    if role:
-      if not role in msg.author.roles:
-        return
-
-      embed= discord.Embed(title= "{}".format(role.name), description= "Transaction for {}.".format(role.name), colour= discord.Colour.green())
-
-      eligible = []
-
-      
-      for x in players:
-        if not x.bot:
-
-          if args[1].lower() == "promote" or args[1].lower() == "demote":
-            eligible.append(x)
-          else:
-            if not msg.author == x:
-              teams = []
-              if not args[1].lower() == "release":
-                for r in x.roles:
-                  if r.position < end.position and r.position > membership.position:
-                    teams.append(r)
-                
-                if len(teams) == 0:
-                  eligible.append(x)
-              else:
-                  eligible.append(x)
-
-        
-      
-
-      if len(eligible) == 0:
-        embed.add_field(name= "``Error``", value= "Unable to sign the players mentioned. They may already be signed to a team. If you tried using the command on yourself, this is not allowed.")
-        embed.colour = discord.Colour.red()
-
-        await msg.channel.send(embed= embed)
-
-        return
-
-
-      if args[1].lower() == "sign":
-        roled = ""
-        capped = ""
-        for x in eligible:
-          if len(role.members) < 16:
-            await x.add_roles(role)
-            roled += x.mention+", "
-          else:
-            capped += x.mention+", "
-        
-        embed.add_field(name="``Added the following players``", value= roled, inline=False)
-        if len(capped) > 0:
-          embed.add_field(name= "``Unable to sign the following players due to player cap``", value= capped)
-        embed.add_field(name= "``Team Size``", value= len(role.members))
-
-      elif args[1].lower() == "release":
-        roled = ""
-        for x in eligible:
-          await x.remove_roles(role)
-          roled += x.mention+", "
-
-          await x.remove_roles(msg.guild.get_role(917068674626646027))
-          await x.remove_roles(msg.guild.get_role(917068697334595664))
-        
-        embed.add_field(name="``Removed the following players``", value= roled, inline=False)
-      
-      elif args[1].lower() == "promote" or args[1].lower() == "demote":
-        if not role in eligible[0].roles:
-          return
-
-        if not roleId == 917068655928442930:
-          embed.colour = discord.Colour.red()
-          embed.add_field(name= "``Missing Permission``", value= "Only Team Owners may promote/demote players.")
-
-          await msg.channel.send(embed= embed)
-          return
-        if len(args) >= 4:
-          if args[3].lower() == "hc":
-            await eligible[0].add_roles(msg.guild.get_role(917068674626646027))
-            await eligible[0].remove_roles(msg.guild.get_role(917068697334595664))
-
-            embed.add_field(name="``Promoted the following player to Head Coach``", value= eligible[0].mention, inline=False)
-          elif args[3].lower() == "ac":
-            await eligible[0].add_roles(msg.guild.get_role(917068697334595664))
-            await eligible[0].remove_roles(msg.guild.get_role(917068674626646027))
-
-            embed.add_field(name="``Promoted the following player to Assistant Coach``", value= eligible[0].mention, inline=False)
-          else:
-            await eligible[0].remove_roles(msg.guild.get_role(917068697334595664))
-            await eligible[0].remove_roles(msg.guild.get_role(917068674626646027))
-
-            embed.add_field(name="``Demoted the following player from coaching``", value= eligible[0].mention, inline=False)
-        else:
-          await eligible[0].remove_roles(msg.guild.get_role(917068697334595664))
-          await eligible[0].remove_roles(msg.guild.get_role(917068674626646027))
-
-          embed.add_field(name="``Demoted the following player from coaching``", value= eligible[0].mention, inline=False)
-      else:
-        if not roleId == 917068655928442930:
-          embed.colour = discord.Colour.red()
-          embed.add_field(name= "``Error``", value= "Sorry but I did not understand what transaction type this message was. Please follow the format: \"<emoji> (sign/release/promote/demote) <mentions of player(s)> (HC/AC, if applicable)\"")
-
-    await msg.channel.send(embed= embed)
-          
   if(msg.channel.id == 917103851092476074):
     if (msg.content.startswith('<:twitter:831307974533316648>')):
       verified =  True
@@ -215,6 +131,452 @@ async def on_message(msg):
       await msg.delete()
   await bot.process_commands(msg)
 
+def transactionEmbed(emoji, team_role):
+    embed= discord.Embed(title= "{} {}".format(emoji, team_role.name), description= "", colour= team_role.color)
+
+    return embed
+
+def make_players_string(list_of_players):
+    string = ""
+
+    for player in list_of_players:
+        string += "{} ({})\n".format(player.mention, player.name)
+    
+    return string
+
+def get_members_from_string(string, htl):
+    members = []
+
+    string = string.split(" ")
+
+    for word in string:
+        if word.startswith("<@") and word.endswith(">"):
+            id = ""
+
+            for i in word:
+                if i.isdigit():
+                    id += str(i)
+
+            id = int(id)
+            
+            if htl.get_member(id):
+                members.append(htl.get_member(id))
+    
+    return members
+
+
+@int_bot.slash_command(
+    description= "Sign player(s) to the team you are roled to. Must be a Assistant Coach+.",
+    options=[
+        Option("players", "Please mention (ping) all of players you're signing here.", OptionType.STRING, required= True)
+    ]
+)
+async def sign(inter, players= None):
+    if not transactions_enabled:
+        embed = error("sign", "Transactions are closed.")
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+
+        return
+
+    author = inter.author
+    htl = inter.guild
+
+    coach_level = coachCheck(author, htl)
+    team_info = teamCheck(author, htl)
+
+    valid_team = team_info[0]
+    team_role = team_info[1]
+    
+    if coach_level == 0 or not valid_team:
+        await inter.create_response(
+            embed= error("release", "You must be a coach on a valid team to use this command."),
+            ephemeral= True
+        )
+        return
+    
+    for e in htl.emojis:
+        if team_role.name.find(e.name) > -1:
+            break
+    
+    embed = transactionEmbed(e, team_role)
+
+    players = get_members_from_string(players, htl)
+
+    error_players = []
+
+    for player in players:
+        if teamCheck(player, htl)[0] or len(team_role.members) >= 20 or player.bot:
+            players.remove(player)
+            error_players.append(player)
+            continue
+
+        await player.add_roles(team_role)
+
+        noti= discord.Embed(title= "You have been signed to: {} {}".format(e, team_role.name), description= "If you did not give permission to this user to sign you, please create a support ticket in <#917085749030031390>.", colour= team_role.color)
+        noti.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+
+        await player.send(
+            embed= noti
+        )
+
+    signedPlayers = make_players_string(players)
+
+    embed.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+
+    if len(players) != 0: 
+        embed.add_field(name="``Sign``", value= signedPlayers, inline=False)
+        embed.add_field(name="``Roster Count``", value= str(len(team_role.members)), inline=False)
+
+        await htl.get_channel(transactions_id).send(
+            embed= embed
+        )
+    
+    if len(error_players) != 0:
+        string_players = make_players_string(error_players)
+
+        embed.add_field(name= "``Failed to Sign``", value= string_players)
+
+    await author.send(
+        content = "***You have just made a transaction.***",
+        embed= embed
+    )
+
+    await inter.create_response(
+        content= "***Check your Direct Messages with {} ({}).***".format(bot.user.mention, bot.user.name),
+        ephemeral= True
+    )
+    
+
+@int_bot.slash_command(
+    description= "Release player(s) from the team you are roled to. Must be a Assistant Coach+.",
+    options=[
+        Option("players", "Please mention (ping) all of players you're releasing here.", OptionType.STRING, required= True)
+    ]
+)
+async def release(inter, players= None):
+    if not transactions_enabled:
+        embed = error("release", "Transactions are closed.")
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+
+        return
+        
+    author = inter.author
+    htl = inter.guild
+
+    coach_level = coachCheck(author, htl)
+    team_info = teamCheck(author, htl)
+
+    valid_team = team_info[0]
+    team_role = team_info[1]
+    
+    if coach_level == 0 or not valid_team:
+        await inter.create_response(
+            embed= error("release", "You must be a coach on a valid team to use this command."),
+            ephemeral= True
+        )
+        return
+    
+    for e in htl.emojis:
+        if team_role.name.find(e.name) > -1:
+            break
+    
+    embed = transactionEmbed(e, team_role)
+
+    players = get_members_from_string(players, htl)
+
+    error_players = []
+
+    for player in players:
+        if teamCheck(player, htl)[1] != team_role:
+            players.remove(player)
+            error_players.append(player)
+            continue
+        
+        await player.remove_roles(team_role)
+
+        noti= discord.Embed(title= "You have been released from: {} {}".format(e, team_role.name), description= "", colour= discord.Color.red())
+        noti.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+
+        await player.send(
+            embed= noti
+        )
+
+    signedPlayers = make_players_string(players)
+
+    embed.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+
+    if len(players) != 0: 
+        embed.add_field(name="``Release``", value= signedPlayers, inline=False)
+
+        await htl.get_channel(transactions_id).send(
+            embed= embed
+        )
+    
+    if len(error_players) != 0:
+        string_players = make_players_string(error_players)
+
+        embed.add_field(name= "``Failed to Release``", value= string_players)
+
+    await author.send(
+        content = "***You have just made a transaction.***",
+        embed= embed
+    )
+
+    await inter.create_response(
+        content= "***Check your Direct Messages with {} ({}).***".format(bot.user.mention, bot.user.name),
+        ephemeral= True
+    )
+
+
+@int_bot.slash_command(
+    description= "Promote players to a coaching position. Must be a Team Owner.",
+    options=[
+        Option("player", "Please mention (ping) the player you're promoting here.", OptionType.USER, required= True),
+        Option("coach", "Please state the level of coaching. 1 = Assistant Coach, 2 = Head Coach.", OptionType.INTEGER, required= True)
+    ]
+)
+async def promote(inter, player= None, coach= None):
+    author = inter.author
+    htl = inter.guild
+
+    if author == player:
+        await inter.create_response(
+            embed= error("promote", "Attempt to use command on self."),
+            ephemeral= True
+        )
+
+    if coach != 1 and coach != 2:
+        embed = error("promote", "Invalid coach level. If you attempted to transfer Team Owner, you must submit a ticket in <#917085749030031390> to request this.")
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+
+        return
+    else:
+        if coach == 1:
+            coachingRole = assistantCoach
+            coachPos = "Assistant Coach"
+        else:
+            coachingRole = headCoach
+            coachPos = "Head Coach"
+    
+    if coach <= coachCheck(player, htl):
+        embed = error("promote", "Player is either already at the requested coaching level or is above it. Use /demote to demote players.")
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+
+        return
+    
+    if not transactions_enabled:
+        embed = error("promote", "Transactions are closed.")
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+
+        return
+        
+    coach_level = coachCheck(author, htl)
+    team_info = teamCheck(author, htl)
+
+    valid_team = team_info[0]
+    team_role = team_info[1]
+    
+    if coach_level != 3 and not valid_team:
+        await inter.create_response(
+            embed= error("promote", "You must be a coach on a valid team to use this command."),
+            ephemeral= True
+        )
+        return
+    
+    for e in htl.emojis:
+        if team_role.name.find(e.name) > -1:
+            break
+    
+    embed = transactionEmbed(e, team_role)
+
+    if teamCheck(player, htl)[1] != team_role:
+        await inter.create_response(
+            embed= error("promote", "Player must be on the same team as you."),
+            ephemeral= True
+        )
+        return
+
+    noti= discord.Embed(title= "You have been demoted to {} for: {} {}".format(coachPos, e, team_role.name), description= "", colour= discord.Color.red())
+    noti.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+
+    await player.send(
+        embed= noti
+    )
+
+    await player.remove_roles(htl.get_role(assistantCoach), htl.get_role(headCoach))
+    await player.add_roles(htl.get_role(coachingRole))
+
+    embed.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+    embed.add_field(name="``Promotion``", value= "{} ({})".format(player.mention, player.name), inline=False)
+
+    await htl.get_channel(transactions_id).send(
+        embed= embed
+    )
+    
+    await author.send(
+        content = "***You have just made a transaction.***",
+        embed= embed
+    )
+
+    await inter.create_response(
+        content= "***Check your Direct Messages with {} ({}).***".format(bot.user.mention, bot.user.name),
+        ephemeral= True
+    )
+
+
+@int_bot.slash_command(
+    description= "Demote players to a coaching position or regular player. Must be a Team Owner.",
+    options=[
+        Option("player", "Please mention (ping) the player you're promoting here.", OptionType.USER, required= True),
+        Option("coach", "Please state the level of coaching. 0 = Player, 1 = Assistant Coach.", OptionType.INTEGER, required= True)
+    ]
+)
+async def demote(inter, player= None, coach= None):
+    author = inter.author
+    htl = inter.guild
+
+    if coach != 0 and coach != 1:
+        embed = error("promote", "Invalid coach level. If you attempted to transfer Team Owner, you must submit a ticket in <#917085749030031390> to request this.")
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+
+        return
+    else:
+        if coach == 0:
+            coachingRole = 0
+            coachPos = "Player"
+        else:
+            coachingRole = assistantCoach
+            coachPos = "Assistant Coach"
+    
+    if coach >= coachCheck(player, htl):
+        embed = error("promote", "Player is either already at the requested coaching level or is below it. Use /promote to promote players.")
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+
+        return
+    
+    if not transactions_enabled:
+        embed = error("promote", "Transactions are closed.")
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+
+        return
+        
+    coach_level = coachCheck(author, htl)
+    team_info = teamCheck(author, htl)
+
+    valid_team = team_info[0]
+    team_role = team_info[1]
+    
+    if coach_level != 3 and not valid_team:
+        await inter.create_response(
+            embed= error("promote", "You must be a coach on a valid team to use this command."),
+            ephemeral= True
+        )
+        return
+    
+    for e in htl.emojis:
+        if team_role.name.find(e.name) > -1:
+            break
+    
+    embed = transactionEmbed(e, team_role)
+
+    if teamCheck(player, htl)[1] != team_role:
+        await inter.create_response(
+            embed= error("promote", "Player must be on the same team as you."),
+            ephemeral= True
+        )
+        return
+
+    noti= discord.Embed(title= "You have been promoted to {} for: {} {}".format(coachPos, e, team_role.name), description= "", colour= discord.Color.green())
+    noti.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+
+    await player.send(
+        embed= noti
+    )
+
+    await player.remove_roles(htl.get_role(assistantCoach), htl.get_role(headCoach))
+
+    if coachingRole != 0:
+        await player.add_roles(htl.get_role(coachingRole))
+
+    embed.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+    embed.add_field(name="``Demotion``", value= "{} ({})".format(player.mention, player.name), inline=False)
+
+    await htl.get_channel(transactions_id).send(
+        embed= embed
+    )
+    
+    await author.send(
+        content = "***You have just made a transaction.***",
+        embed= embed
+    )
+
+    await inter.create_response(
+        content= "***Check your Direct Messages with {} ({}).***".format(bot.user.mention, bot.user.name),
+        ephemeral= True
+    )
+
+'''
+@int_bot.slash_command(
+    description= "Release player(s) from the team you are roled to. Must be a Assistant Coach+.",
+    options=[
+        Option("players", "Please mention (ping) all of players you're releasing here.", OptionType.STRING, required= True)
+    ]
+)
+async def trade(inter, players= None):
+    if not transactions_enabled:
+        embed = error("sign", "Transactions are closed.")
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+
+        return
+
+    author = inter.author
+
+    coach_level = coachCheck(author, htl)
+    team_info = teamCheck(author, htl)
+
+    if coach_level == 0 or not valid_team:
+        await inter.create_response(
+            embed= error("release", "You must be a coach on a valid team to use this command."),
+            ephemeral= True
+        )
+        return
+'''
 
 #@int_bot.slash_command()
 async def changething(ctx):
@@ -533,103 +895,6 @@ async def updateinfo(inter, url= None, vc= False):
 
         components=None
     )
-
-events_channel = 900511820643725312      
-@int_bot.slash_command(
-    description= "Post a gamenight",
-    options=[
-        Option("url", "Enter the gamenight URL", OptionType.STRING, required= True),
-        Option("vc", "Will this gamenight be in a VC as well? T/F", OptionType.BOOLEAN)
-        # By default, Option is optional
-        # Pass required=True to make it a required arg
-    ]
-)
-async def gamenight(inter, url= None, vc= False):
-    valid_domains = [
-        "roblox",
-        "skribbl"
-    ]
-
-    author = inter.author
-    guild = inter.guild
-
-    valid = False
-
-    for role in author.roles:
-        if role.name.find("Community"):
-            valid = True
-            
-    if not valid:
-        embed = discord.Embed(title="Error", description= "You do not have permission to run this command.", colour= discord.Colour.red())
-
-        await inter.create_response(
-            embed= embed,
-            ephemeral = True
-        )
-        return
-
-    try:
-        response = requests.get(url)
-    except:
-        embed = discord.Embed(title="Error", description= "Invalid URL.", colour= discord.Colour.red())
-        await inter.create_response(
-            embed= embed,
-            ephemeral = True
-        )
-        return
-    
-    valid_url = False
-
-    for domain in valid_domains:
-        if url.find(domain):
-            valid_url = True
-
-    if not valid_url:
-        embed = discord.Embed(title="Error", description= "Invalid URL domain.", colour= discord.Colour.red())
-
-        list_of_domains = ""
-
-        for domain in valid_domains:
-            list_of_domains += "\n- *()*".format(domain)
-        
-        list_of_domains += "\n- *More coming soon...*"
-
-        embed.add_field(name= "``List of Valid Domains``", value= list_of_domains)
-
-        await inter.create_response(
-            embed= embed,
-            ephemeral = True
-        )
-
-        return
-    
-    embed = discord.Embed(title="Sending...", description= "Your gamenight is being posted.", colour= discord.Colour.green())
-
-    await inter.create_response(
-        embed= embed,
-        ephemeral = True
-    )
-
-    embed = discord.Embed(title="New Gamenight!", description= "New gamenight hosted by {}.".format(author.mention), colour= discord.Colour.blurple())
-
-    def in_vc():
-        if vc:
-            return "This gamenight will be using a Voice Channel."
-        else:
-            return "This gamenight will not be using a Voice Channel."
-
-    embed.add_field(name="``Voice Channel?``", value= in_vc())
-
-    await bot.get_channel(events_channel).send(
-        content= "<@&900551881003237426>",
-        embed= embed
-    )
-
-    await bot.get_channel(events_channel).send(
-        content= url
-    )
-
-
                 
 @int_bot.slash_command(description="Info.")
 async def information(inter):
