@@ -274,53 +274,91 @@ async def suggest(inter, suggestion= None):
     await msg.add_reaction("❌")
 
 
-"""@int_bot.slash_command(
+demands = {
+    2: 942302221696135198,
+    1: 942302278054985808,
+    0: 942302302037999616
+}
+
+def get_demands(user, htl):
+    dr = 3
+
+    for demands_remaining, role_id in demands.items():
+        if htl.get_role(role_id) in user.roles:
+            dr = demands_remaining
+            break
+    
+    return dr
+
+@int_bot.slash_command(
     description= "Demand a release from a team.",
     options=[
         Option("reason", "Is there any reason for why you're demanding a release?", OptionType.STRING, required= False)
     ]
-)"""
+)
 async def demand(inter, reason= None):
-    try:
-        connection = psycopg2.connect(
-            user="yulopqnbwringk",
-            password="554b54b2a437f704824a09b2602a68d1f7c9269e4307d7f4d71dcbd080736ce2",
-            host="ec2-23-23-162-138.compute-1.amazonaws.com",
-            port="5432",
-            database="d2m6dv5ob6vvhd"
+    if not transactions_enabled:
+        embed = error("demand", "Transactions are closed.")
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
         )
 
-        print("Successfiully connected.")
-    except Exception:
-        print("Unable to connect to demands database.")
         return
-
-    cursor = connection.cursor()
-
-    def closeConn():
-        cursor.close()
-        connection.close()
 
     author = inter.author
     htl = inter.guild
 
-    query = """UPDATE demands SET total = total + 1 WHERE id = %s;"""
-    cursor.execute(query, str(author.id))
+    team_info = teamCheck(author, htl)
+    coach_info = coachCheck(author, htl)
+    demands_info = get_demands(author, htl)
 
-    await inter.create_response(
-        embed = discord.Embed(title= "Your suggestion has been recorded.".format(author.name + "#" + author.discriminator), description= reason, colour= discord.Color.green()),
-        ephemeral= True
+    if coach_info == 3 or not team_info[0]:
+        await inter.create_response(
+            embed= error("demand", "You must be on a valid team and not be a Team Owner to use this command."),
+            ephemeral= True
+        )
+        return
+
+    if demands_info == 0:
+        await inter.create_response(
+            embed= error("demand", "You do not have any more demands available."),
+            ephemeral= True
+        )
+        return
+
+    if demands_info == 3:
+        await author.remove_roles(htl.get_role(demands[1]), htl.get_role(demands[0]))
+        await author.add_roles(htl.get_role(demands[2]))
+    elif demands_info == 2:
+        await author.remove_roles(htl.get_role(demands[2]), htl.get_role(demands[0]))
+        await author.add_roles(htl.get_role(demands[1]))
+    elif demands_info:
+        await author.remove_roles(htl.get_role(demands[2]), htl.get_role(demands[1]))
+        await author.add_roles(htl.get_role(demands[0]))
+
+    await author.remove_roles(
+        team_info[1],
+        htl.get_role(917068697334595664), # AC
+        htl.get_role(917068674626646027) # HC
     )
 
-    embed= discord.Embed(title= "Suggestion | {}".format(author.name + "#" + author.discriminator), description= reason, colour= discord.Color.blurple())
-    embed.set_footer(text= author.name + "#" + author.discriminator, icon_url= author.avatar_url)
+    for e in htl.emojis:
+        if team_info[1].name.find(e.name) > -1:
+            break
+    
+    embed = transactionEmbed(e, team_info[1])
+    embed.add_field(name= "``Demanded a Release``", value= "{} ({})".format(author.mention, author.name), inline=False)
 
-    msg = await htl.get_channel(941826291550793838).send(
+    if reason:
+        embed.add_field(name= "``Reason``", value= reason, inline=False)
+
+    await htl.get_channel(917102767208816680).send(
         embed= embed
     )
 
-    await msg.add_reaction("✅")
-    await msg.add_reaction("❌")
+
 
 @int_bot.slash_command(
     description= "Release player(s) from the team you are roled to. Must be a Assistant Coach+.",
@@ -416,7 +454,7 @@ async def release(inter, players= None):
 )
 async def promote(inter, player= None, coach= None):
     if not transactions_enabled:
-        embed = error("release", "Transactions are closed.")
+        embed = error("promote", "Transactions are closed.")
 
         await inter.create_response(
             embed= embed,
@@ -533,7 +571,7 @@ async def promote(inter, player= None, coach= None):
 )
 async def demote(inter, player= None, coach= None):
     if not transactions_enabled:
-        embed = error("release", "Transactions are closed.")
+        embed = error("demote", "Transactions are closed.")
 
         await inter.create_response(
             embed= embed,
@@ -545,7 +583,7 @@ async def demote(inter, player= None, coach= None):
     htl = inter.guild
 
     if coach != 0 and coach != 1:
-        embed = error("promote", "Invalid coach level. If you attempted to transfer Team Owner, you must submit a ticket in <#917085749030031390> to request this.")
+        embed = error("demote", "Invalid coach level. If you attempted to transfer Team Owner, you must submit a ticket in <#917085749030031390> to request this.")
 
         await inter.create_response(
             embed= embed,
@@ -562,7 +600,7 @@ async def demote(inter, player= None, coach= None):
             coachPos = "Assistant Coach"
     
     if coach >= coachCheck(player, htl):
-        embed = error("promote", "Player is either already at the requested coaching level or is below it. Use /promote to promote players.")
+        embed = error("demote", "Player is either already at the requested coaching level or is below it. Use /promote to promote players.")
 
         await inter.create_response(
             embed= embed,
@@ -572,7 +610,7 @@ async def demote(inter, player= None, coach= None):
         return
     
     if not transactions_enabled:
-        embed = error("promote", "Transactions are closed.")
+        embed = error("demote", "Transactions are closed.")
 
         await inter.create_response(
             embed= embed,
@@ -589,7 +627,7 @@ async def demote(inter, player= None, coach= None):
     
     if coach_level != 3 and not valid_team:
         await inter.create_response(
-            embed= error("promote", "You must be a coach on a valid team to use this command."),
+            embed= error("demote", "You must be a coach on a valid team to use this command."),
             ephemeral= True
         )
         return
@@ -602,12 +640,12 @@ async def demote(inter, player= None, coach= None):
 
     if teamCheck(player, htl)[1] != team_role:
         await inter.create_response(
-            embed= error("promote", "Player must be on the same team as you."),
+            embed= error("demote", "Player must be on the same team as you."),
             ephemeral= True
         )
         return
 
-    noti= discord.Embed(title= "You have been promoted to {} for: {} {}".format(coachPos, e, team_role.name), description= "", colour= discord.Color.green())
+    noti= discord.Embed(title= "You have been demoted to {} for: {} {}".format(coachPos, e, team_role.name), description= "", colour= discord.Color.green())
     noti.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
 
     await player.send(
