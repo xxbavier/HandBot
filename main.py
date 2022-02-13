@@ -1,7 +1,6 @@
 from datetime import time
 from email import message
 from urllib import response
-from aiohttp.client_reqrep import ContentDisposition
 import discord
 from discord import player
 from discord.embeds import Embed
@@ -9,11 +8,11 @@ from discord.ext import commands, tasks
 from discord.utils import parse_time
 from dislash import InteractionClient, ActionRow, Button, ButtonStyle, SelectMenu, SelectOption, ContextMenuInteraction, Option, OptionType
 from dislash.interactions.message_components import Component
+import psycopg2
 
 import keep_alive
 import json
 from itertools import cycle
-import sqlite3
 import math
 
 # Initiate
@@ -247,7 +246,81 @@ async def sign(inter, players= None):
         content= "***Check your Direct Messages with {} ({}).***".format(bot.user.mention, bot.user.name),
         ephemeral= True
     )
-    
+
+
+@int_bot.slash_command(
+    description= "Suggest ideas to be considered for the league.",
+    options=[
+        Option("suggestion", "What is your suggestion?", OptionType.STRING, required= True)
+    ]
+)
+async def suggest(inter, suggestion= None):
+    author = inter.author
+    htl = inter.guild
+
+    await inter.create_response(
+        embed = discord.Embed(title= "Your suggestion has been recorded.".format(author.name + "#" + author.discriminator), description= suggestion, colour= discord.Color.green()),
+        ephemeral= True
+    )
+
+    embed= discord.Embed(title= "Suggestion | {}".format(author.name + "#" + author.discriminator), description= suggestion, colour= discord.Color.blurple())
+    embed.set_footer(text= author.name + "#" + author.discriminator, icon_url= author.avatar_url)
+
+    msg = await htl.get_channel(941826291550793838).send(
+        embed= embed
+    )
+
+    await msg.add_reaction("✅")
+    await msg.add_reaction("❌")
+
+
+"""@int_bot.slash_command(
+    description= "Demand a release from a team.",
+    options=[
+        Option("reason", "Is there any reason for why you're demanding a release?", OptionType.STRING, required= False)
+    ]
+)"""
+async def demand(inter, reason= None):
+    try:
+        connection = psycopg2.connect(
+            user="yulopqnbwringk",
+            password="554b54b2a437f704824a09b2602a68d1f7c9269e4307d7f4d71dcbd080736ce2",
+            host="ec2-23-23-162-138.compute-1.amazonaws.com",
+            port="5432",
+            database="d2m6dv5ob6vvhd"
+        )
+
+        print("Successfiully connected.")
+    except Exception:
+        print("Unable to connect to demands database.")
+        return
+
+    cursor = connection.cursor()
+
+    def closeConn():
+        cursor.close()
+        connection.close()
+
+    author = inter.author
+    htl = inter.guild
+
+    query = """UPDATE demands SET total = total + 1 WHERE id = %s;"""
+    cursor.execute(query, str(author.id))
+
+    await inter.create_response(
+        embed = discord.Embed(title= "Your suggestion has been recorded.".format(author.name + "#" + author.discriminator), description= suggestion, colour= discord.Color.green()),
+        ephemeral= True
+    )
+
+    embed= discord.Embed(title= "Suggestion | {}".format(author.name + "#" + author.discriminator), description= suggestion, colour= discord.Color.blurple())
+    embed.set_footer(text= author.name + "#" + author.discriminator, icon_url= author.avatar_url)
+
+    msg = await htl.get_channel(941826291550793838).send(
+        embed= embed
+    )
+
+    await msg.add_reaction("✅")
+    await msg.add_reaction("❌")
 
 @int_bot.slash_command(
     description= "Release player(s) from the team you are roled to. Must be a Assistant Coach+.",
@@ -342,6 +415,15 @@ async def release(inter, players= None):
     ]
 )
 async def promote(inter, player= None, coach= None):
+    if not transactions_enabled:
+        embed = error("release", "Transactions are closed.")
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+
+        return
     author = inter.author
     htl = inter.guild
 
@@ -450,6 +532,15 @@ async def promote(inter, player= None, coach= None):
     ]
 )
 async def demote(inter, player= None, coach= None):
+    if not transactions_enabled:
+        embed = error("release", "Transactions are closed.")
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+
+        return
     author = inter.author
     htl = inter.guild
 
