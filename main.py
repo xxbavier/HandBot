@@ -28,7 +28,7 @@ int_bot = InteractionClient(bot, test_guilds=[823037558027321374, 90915338026865
 
 status = cycle(['Handball','Xavs Simulator'])
 
-transactions_enabled = True
+transactions_enabled = False
 
 transactions_id = 917102767208816680
 
@@ -308,11 +308,11 @@ async def demand(inter, reason= None):
     cursor.execute(query, str(author.id))
 
     await inter.create_response(
-        embed = discord.Embed(title= "Your suggestion has been recorded.".format(author.name + "#" + author.discriminator), description= suggestion, colour= discord.Color.green()),
+        embed = discord.Embed(title= "Your suggestion has been recorded.".format(author.name + "#" + author.discriminator), description= reason, colour= discord.Color.green()),
         ephemeral= True
     )
 
-    embed= discord.Embed(title= "Suggestion | {}".format(author.name + "#" + author.discriminator), description= suggestion, colour= discord.Color.blurple())
+    embed= discord.Embed(title= "Suggestion | {}".format(author.name + "#" + author.discriminator), description= reason, colour= discord.Color.blurple())
     embed.set_footer(text= author.name + "#" + author.discriminator, icon_url= author.avatar_url)
 
     msg = await htl.get_channel(941826291550793838).send(
