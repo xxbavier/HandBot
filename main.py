@@ -1,4 +1,5 @@
 from datetime import time
+from dis import disco
 from email import message
 from urllib import response
 import discord
@@ -28,13 +29,19 @@ int_bot = InteractionClient(bot, test_guilds=[823037558027321374, 90915338026865
 
 status = cycle(['Handball','Xavs Simulator'])
 
-transactions_enabled = False
+transactions_enabled = True
 
 transactions_id = 917102767208816680
 
 teamOwner = 917068655928442930
 headCoach = 917068674626646027
 assistantCoach = 917068697334595664
+
+demands = {
+    2: 942302221696135198,
+    1: 942302278054985808,
+    0: 942302302037999616
+}
 
 def coachCheck(user, htl):
     '''
@@ -127,6 +134,26 @@ async def on_message(msg):
     else:
       await msg.delete()
   await bot.process_commands(msg)
+
+@bot.event
+async def on_member_remove(member):
+    htl = bot.get_guild(909153380268650516)
+
+    for demand in demands.values():
+        role = htl.get_role(demand) 
+        print(demand)
+
+        if role in member.roles:
+            embed = discord.Embed(title= "Member With Demands Has Left the Server.", description= "", colour= discord.Color.red())
+
+            embed.add_field(name="``Demands``", value=role.mention)
+
+            embed.set_footer(text= member.name + "#" + member.discriminator, icon_url= member.avatar_url)
+
+            await htl.get_channel(943324167154053250).send(embed= embed)
+
+            break
+
 
 def transactionEmbed(emoji, team_role):
     embed= discord.Embed(title= "{} {}".format(emoji, team_role.name), description= "", colour= team_role.color)
@@ -272,13 +299,6 @@ async def suggest(inter, suggestion= None):
 
     await msg.add_reaction("✅")
     await msg.add_reaction("❌")
-
-
-demands = {
-    2: 942302221696135198,
-    1: 942302278054985808,
-    0: 942302302037999616
-}
 
 def get_demands(user, htl):
     dr = 3
