@@ -140,8 +140,7 @@ async def on_member_remove(member):
     htl = bot.get_guild(909153380268650516)
 
     for demand in demands.values():
-        role = htl.get_role(demand) 
-        print(demand)
+        role = htl.get_role(demand)
 
         if role in member.roles:
             embed = discord.Embed(title= "Member With Demands Has Left the Server.", description= "", colour= discord.Color.red())
