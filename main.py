@@ -232,7 +232,7 @@ async def sign(inter, players= None):
     error_players = []
 
     for player in players:
-        if teamCheck(player, htl)[0] or len(team_role.members) >= 20 or player.bot:
+        if teamCheck(player, htl)[0] or len(team_role.members) >= 15 or player.bot:
             players.remove(player)
             error_players.append(player)
             continue
