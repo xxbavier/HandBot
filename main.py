@@ -1041,7 +1041,30 @@ async def updateinfo(inter, url= None, vc= False):
 
         components=None
     )
-                
+
+@int_bot.slash_command()
+async def roles(inter):
+    author = inter.author
+    guild = inter.guild
+
+    if not guild.get_role(910373792176554016) in author.roles:
+        return
+
+
+    # REACTION ROLES #
+
+    embed = discord.Embed(title="Roles", description= "Gain roles by reacting with the respective emoji.", colour= discord.Colour.blue())
+    embed.add_field(name= "🔰 ``Team Owner Queue``", value= "*React using the 🔰 emoji to ENABLE notifications regarding open Team Owner positions.*", inline= False)
+    embed.add_field(name= "🚫 ``Disable Partnerships``", value= "*React using the 🚫 emoji to DISABLE the partnerships channel and its notifications.*", inline= False)
+    embed.add_field(name= "📺 ``Disable Streams``", value= "*React using the 📺 emoji to DISABLE the streams channel and its notifications.*", inline= False)
+    embed.add_field(name= "🤾 ``Enable Pickups``", value= "*React using the 🤾 emoji to ENABLE the pickups channel and its notifications.*", inline= False)
+    embed.add_field(name= "🎮 ``Enable Gamenights``", value= "*React using the 🎮 emoji to ENABLE the gamenights channel and its notifications.*", inline= False)
+    embed.add_field(name= "📰 ``Media Ping``", value= "*React using the 📰 emoji to ENABLE media notifications (⚠️ You may receive frequent notifications with this role).*", inline= False)
+
+    await inter.channel.send(
+        embed = embed
+    )
+
 @int_bot.slash_command(description="Info.")
 async def information(inter):
     author = inter.author
@@ -1149,18 +1172,6 @@ async def information(inter):
     await inter.channel.send(
         embed = embed,
         components = [action]
-    )
-
-    # REACTION ROLES #
-
-    embed = discord.Embed(title="Roles", description= "Gain roles by reacting with the respective emoji.", colour= discord.Colour.blue())
-    embed.add_field(name= "🚫 ``Disable Partnerships``", value= "*React using the 🚫 emoji to DISABLE the partnerships channel and its notifications.*", inline= False)
-    embed.add_field(name= "📺 ``Disable Streams``", value= "*React using the 📺 emoji to DISABLE the streams channel and its notifications.*", inline= False)
-    embed.add_field(name= "🤾 ``Enable Pickups``", value= "*React using the 🤾 emoji to ENABLE the pickups channel and its notifications.*", inline= False)
-    embed.add_field(name= "🎮 ``Enable Gamenights``", value= "*React using the 🎮 emoji to ENABLE the gamenights channel and its notifications.*", inline= False)
-
-    await inter.channel.send(
-        embed = embed
     )
     
 """    
