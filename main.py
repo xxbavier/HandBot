@@ -1,6 +1,7 @@
 from datetime import time
 from dis import disco
 from email import message
+from pydoc import describe
 from urllib import response
 import discord
 from discord import player
@@ -1065,114 +1066,222 @@ async def roles(inter):
         embed = embed
     )
 
-@int_bot.slash_command(description="Info.")
-async def information(inter):
+@int_bot.slash_command(
+    description= "Resources.",
+    options=[
+        Option("channel", "Which channel needs it's info embeds?", OptionType.CHANNEL, required= True)
+    ]
+)
+async def resources(inter, channel):
     author = inter.author
     guild = inter.guild
 
     if not guild.get_role(910373792176554016) in author.roles:
         return
 
-    # INFORMATION #
+    channels = {
+        'Links': 914703851800649769,
+        'Rosters': 948053321875353660,
+        'Roles': 944094182631407636,
+        'Stats Archive': 948055093192847420,
+        'Help': 948055826894053446
+    }
 
-    embed = discord.Embed(title="Information", description= "Welcome to the *Handball: The League* information channel. This is where you can find important documents and resources for the league.\n\nTo access the resources, please select an option from the dropdown below.", colour= discord.Colour.blue())
+    for channel_name, channel_id in channels.items():
+        if channel.id == channel_id:
+            embed = discord.Embed(title=channel_name, description= "Welcome to *Handball: The League*.", colour= discord.Colour.gold())
+            embed.set_image(url= "https://media.discordapp.net/attachments/900196855663689730/947345003280203846/Handball_Thumbnail.png?width=822&height=462")
 
-    action = SelectMenu(
-        custom_id="information",
-        placeholder="Select an option.",
-        max_values=1,
-        options=[
-            SelectOption(label= "Vanity Link", value="https://discord.gg/handball"),
-            SelectOption(label= "Rulebook", value="https://docs.google.com/document/d/1VXrPnWmtphGJW8j6uFuSDvTo7sT5_x0NgW5hjICvybI/edit?usp=sharing"),
-            SelectOption(label= "Statistics", value="https://docs.google.com/spreadsheets/d/1TFaIAtaDMKAm-9CsTuVd8qcATVSr8ZrFKSFbgJR4F0U/edit?usp=sharing"),
-            SelectOption(label= "Handball Association v1.16", value= "https://www.roblox.com/games/7521555382/HBA-1-16"),
-            SelectOption(label= "Main Game", value= "https://www.roblox.com/games/5498056786/Handball-Association"),
-            SelectOption(label= "League Group", value= "https://www.roblox.com/groups/10195697/Handball-The-League#!/about"),
-            SelectOption(label= "Team Owner Sign-Up", value= "https://forms.gle/s9qfRhkMPmU5XnVe6"),
-            SelectOption(label= "Events Game", value= "https://www.roblox.com/games/6732385646/Handball-The-League"),
-            SelectOption(label= "League YouTube", value= "https://www.youtube.com/channel/UCXdF-Z0u2NNiVNLjf1Oq2HA")
-        ]
-    )
+            await channel.send(embed=embed)
+            break
 
-    await inter.channel.send(
-        embed= embed,
-        components=[action]
-    )
+    if channel.id == channels["Links"]:
+        # ROBLOX LINKS #
+        embed = discord.Embed(title="Roblox Links", description= "", colour= discord.Colour.light_grey())
 
-    # TEAM COACHES #
+        action = SelectMenu(
+            custom_id="information",
+            placeholder="Select an option.",
+            max_values=1,
+            options=[
+                SelectOption(label= "League Group", value= "https://www.roblox.com/groups/10195697/Handball-The-League#!/about"),
+                SelectOption(label= "Handball Association", value= "https://www.roblox.com/games/5498056786/Handball-Association"),
+                SelectOption(label= "HTL Events", value= "https://www.roblox.com/games/6732385646/Handball-The-League")
+            ]
+        )
 
-    embed = discord.Embed(title="Team Coaches", description= "Select a team below to view a list of their Team Coaches.", colour= discord.Colour.blue())
+        await channel.send(
+            embed= embed,
+            components=[action]
+        )
 
-    membership = guild.get_role(917043822402338886)
-    end = guild.get_role(917043508509032508)
-    opts = []
+        # LEAGUE FILES #
+        embed = discord.Embed(title="League Files", description= "", colour= discord.Colour.dark_grey())
 
-    for r in guild.roles:
-        if not r in author.roles:
-            if r.position < end.position and r.position > membership.position:
-                em = None
-                for e in guild.emojis:
+        action = SelectMenu(
+            custom_id="information",
+            placeholder="Select an option.",
+            max_values=1,
+            options=[
+                SelectOption(label= "Rulebook", value="https://docs.google.com/document/d/1VXrPnWmtphGJW8j6uFuSDvTo7sT5_x0NgW5hjICvybI/edit?usp=sharing"),
+                SelectOption(label= "Main Sheet", value="https://docs.google.com/spreadsheets/d/1TFaIAtaDMKAm-9CsTuVd8qcATVSr8ZrFKSFbgJR4F0U/edit?usp=sharing")
+            ]
+        )
+
+        await channel.send(
+            embed= embed,
+            components=[action]
+        )
+
+        # APPLICATIONS #
+        embed = discord.Embed(title="Applications", description= "", colour= discord.Colour.red())
+
+        action = SelectMenu(
+            custom_id="information",
+            placeholder="Select an option.",
+            max_values=1,
+            options=[
+                SelectOption(label= "Team Owner", value="https://forms.gle/UV8WAfYVA5yD7jaX8"),
+                SelectOption(label= "Streamer", value="https://forms.gle/nqoKMc87xJGZer5AA")
+            ]
+        )
+
+        await channel.send(
+            embed= embed,
+            components=[action]
+        )
+
+        # Social Media #
+        embed = discord.Embed(title="Social Media", description= "", colour= discord.Colour.blurple())
+
+        action = SelectMenu(
+            custom_id="information",
+            placeholder="Select an option.",
+            max_values=1,
+            options=[
+                SelectOption(label= "League YouTube", value= "https://www.youtube.com/channel/UCXdF-Z0u2NNiVNLjf1Oq2HA")
+            ]
+        )
+
+        await channel.send(
+            embed= embed,
+            components=[action]
+        )
+
+    elif channel.id == channels["Rosters"]:
+        # TEAM COACHES #
+        embed = discord.Embed(title="Team Coaches", description= "Select a team below to view a list of their Team Coaches.", colour= discord.Colour.blue())
+
+        membership = guild.get_role(917043822402338886)
+        end = guild.get_role(917043508509032508)
+        opts = []
+
+        for r in guild.roles:
+            if not r in author.roles:
+                if r.position < end.position and r.position > membership.position:
+                    em = None
+                    for e in guild.emojis:
+                        try:
+                            if r.name[-(len(e.name)):].lower() == e.name.lower():
+                                em = e
+                        except:
+                            continue
+                    
+                    option = None
                     try:
-                        if r.name[-(len(e.name)):].lower() == e.name.lower():
-                            em = e
+                        option = SelectOption(label=r.name, value=json.dumps([str(em.name), str(r.name)]), emoji=str(em))
                     except:
-                        continue
-                
-                option = None
-                try:
-                    option = SelectOption(label=r.name, value=json.dumps([str(em.name), str(r.name)]), emoji=str(em))
-                except:
-                    option = SelectOption(label=r.name, value=json.dumps(["", str(r.name)]))
-                opts.append(option)
+                        option = SelectOption(label=r.name, value=json.dumps(["", str(r.name)]))
+                    opts.append(option)
 
 
-    action = SelectMenu(
-        custom_id="team coaches",
-        placeholder="Select a team.",
-        max_values=1,
-        options=opts
-    )
+        action = SelectMenu(
+            custom_id="team coaches",
+            placeholder="Select a team.",
+            max_values=1,
+            options=opts
+        )
 
-    await inter.channel.send(
-        embed= embed,
-        components=[action]
-    )
+        await channel.send(
+            embed= embed,
+            components=[action]
+        )
 
-    # MEMBERS #
+        # MEMBERS #
+        opts = []
 
-    opts = []
-
-    for r in guild.roles:
-        if not r in author.roles:
-            if r.position < end.position and r.position > membership.position:
-                em = None
-                for e in guild.emojis:
+        for r in guild.roles:
+            if not r in author.roles:
+                if r.position < end.position and r.position > membership.position:
+                    em = None
+                    for e in guild.emojis:
+                        try:
+                            if r.name[-(len(e.name)):].lower() == e.name.lower():
+                                em = e
+                        except:
+                            continue
+                    
+                    option = None
                     try:
-                        if r.name[-(len(e.name)):].lower() == e.name.lower():
-                            em = e
+                        option = SelectOption(label=r.name, value=json.dumps([str(em.name), str(r.name)]), emoji=str(em))
                     except:
-                        continue
-                
-                option = None
-                try:
-                    option = SelectOption(label=r.name, value=json.dumps([str(em.name), str(r.name)]), emoji=str(em))
-                except:
-                    option = SelectOption(label=r.name, value=json.dumps(["", str(r.name)]))
-                opts.append(option)
+                        option = SelectOption(label=r.name, value=json.dumps(["", str(r.name)]))
+                    opts.append(option)
 
-    action = SelectMenu(
-        custom_id="members",
-        placeholder="Choose a team.",
-        max_values=1,
-        options=opts
-    )
+        action = SelectMenu(
+            custom_id="members",
+            placeholder="Choose a team.",
+            max_values=1,
+            options=opts
+        )
 
-    embed = discord.Embed(title="Team Rosters", description= "Select a team below to view their roster.", colour= discord.Colour.blue())
+        embed = discord.Embed(title="Team Rosters", description= "Select a team below to view their roster.", colour= discord.Colour.blue())
 
-    await inter.channel.send(
-        embed = embed,
-        components = [action]
-    )
+        await channel.send(
+            embed = embed,
+            components = [action]
+        )
+
+    elif channel.id == channels["Stats Archive"]:
+        leagues = {
+            'Handball Association': {
+                'Season 1': "https://docs.google.com/spreadsheets/d/1bxNPHuIyFYqNIkH_mbLzkdN1d-ymH37NL1F_vLNsU88/edit?usp=sharing",
+                'Season 2': "https://docs.google.com/spreadsheets/d/1QjfSL8CnoDnM7TasytWkTAKZh4N5ydZQElHhB5FVyso/edit?usp=sharing"
+            },
+
+            'Handball: The League v1': {
+                'Season 1': "https://docs.google.com/spreadsheets/d/1pp5OuPtctRJ56g1FsMmbCDTVHVUfj7Ndtnf3lHvY-r0/edit?usp=sharing",
+                'Season 2': "https://docs.google.com/spreadsheets/d/1FP6lWNJmI-TleebDgP_1Ia8fKfovl4WVnC6cTBQAjbM/edit?usp=sharing",
+                'Season 3': "https://docs.google.com/spreadsheets/d/1NOFvEUbyoHGxMhKXE5A6MPWO7BdMy0q4g6D-aH5uCSI/edit?usp=sharing",
+                'Season 4': "Stats for Season 4 have been lost."
+            },
+
+            'Handball: The League v2': {
+                'Season 1': "Stats for Season 1 have been lost.",
+                'Season 2': "Coming soon..."
+            }
+        }
+
+        for league, league_data in leagues.items():
+            embed = discord.Embed(title=league, description= "", colour= discord.Colour.light_grey())
+
+            options = []
+
+            for season, stats in league_data.items():
+                options.append(SelectOption(label= season, value=stats))
+
+            action = SelectMenu(
+                custom_id="information",
+                placeholder="Select an option.",
+                max_values=1,
+                options=options
+            )
+
+            await channel.send(
+                embed= embed,
+                components=[action]
+            )
+
     
 """    
 @int_bot.slash_command(
