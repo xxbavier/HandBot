@@ -2,6 +2,7 @@ from datetime import time
 from dis import disco
 from email import message
 from pydoc import describe
+from ssl import Options
 from urllib import response
 import discord
 from discord import player
@@ -43,6 +44,21 @@ demands = {
     1: 942302278054985808,
     0: 942302302037999616
 }
+
+htl_servers = {
+    "League": 909153380268650516,
+    "Media": 928509118208180275
+}
+
+def team_role_check(role):
+    htl = bot.get_channel(htl_servers["League"])
+
+    membership = htl.get_role(917043822402338886)
+    end = htl.get_role(917043508509032508)
+
+    if role.position < end.position and role.position > membership.position:
+        return True
+    return False
 
 def coachCheck(user, htl):
     '''
@@ -844,10 +860,6 @@ async def post(ctx):
 
         return
 
-
-
-
-
 @int_bot.slash_command(description= "Submit your game time.")
 async def gametime(inter):
     def check(user):
@@ -1043,6 +1055,72 @@ async def updateinfo(inter, url= None, vc= False):
         components=None
     )
 
+
+
+@int_bot.slash_command(name= "Request Streamer")
+async def request_streamer():
+    pass
+
+@int_bot.slash_command(
+    name= "Post Stream",
+    options=[
+        Option("team_one", "Enter the role of the team playing.", OptionType.ROLE, required= True),
+        Option("team_one", "Enter the role of the team playing.", OptionType.ROLE, required= True),
+        Option("stream_link", "Enter the stream link for your game.", OptionType.STRING, required= True)
+    ]
+)
+async def post_stream(inter, team_one, team_two, stream_link):
+    author = inter.author
+    htl = bot.get_channel(htl_servers["League"])
+
+    if not 922406011690700830 in author.roles:
+        await inter.create_response(
+            embed= error("Post Stream", "You must be a streamer to use this command.".format(team_one.name)),
+            ephemerical= True
+        )
+
+    if team_role_check(team_one):
+        await inter.create_response(
+            embed= error("Post Stream", "\"{}\" is not a valid team.".format(team_one.name)),
+            ephemerical= True
+        )
+    
+    if team_role_check(team_two):
+        await inter.create_response(
+            embed= error("Post Stream", "\"{}\" is not a valid team.".format(team_two.name)),
+            ephemerical= True
+        )
+
+    if team_one == team_two:
+        await inter.create_response(
+            embed= error("Post Stream", "Both teams are the same."),
+            ephemerical= True
+        )
+
+    embed = discord.Embed(title="Stream Post Request", description= "Please review the information below. If you are ready to submit this request, press the green button. If not, press the red button. A Director+ will receive this request and will be allowed to approve/decline it.", colour= discord.Colour.red())
+    await inter.create_response(
+        embed= embed,
+        components= [
+            ActionRow(
+                Button(label="✅",  style= ButtonStyle.green),
+                Button(label="❌",  style= ButtonStyle.red)
+            )
+        ],
+        ephemerical= True
+    )
+
+
+    @int_bot.event
+    async def on_button_click(int):
+        if int.component.label == "✅":
+            pass
+        else:
+            await inter.create_response(
+                embed= error("Post Stream", "Cancelling."),
+                ephemerical= True
+            )
+
+
 @int_bot.slash_command()
 async def roles(inter):
     author = inter.author
@@ -1065,7 +1143,7 @@ async def roles(inter):
     await inter.channel.send(
         embed = embed
     )
-
+    
 @int_bot.slash_command(
     description= "Resources.",
     options=[
@@ -1123,7 +1201,7 @@ async def resources(inter, channel):
             placeholder="Select an option.",
             max_values=1,
             options=[
-                SelectOption(label= "Rulebook", value="https://docs.google.com/document/d/1VXrPnWmtphGJW8j6uFuSDvTo7sT5_x0NgW5hjICvybI/edit?usp=sharing"),
+                SelectOption(label= "Rulebook", value="https://docs.google.com/document/d/1NK3pw-e5EojJOTNzIQCjkG5hY5P6YbircnLlQH6Rc5A/edit?usp=sharing"),
                 SelectOption(label= "Main Sheet", value="https://docs.google.com/spreadsheets/d/1TFaIAtaDMKAm-9CsTuVd8qcATVSr8ZrFKSFbgJR4F0U/edit?usp=sharing")
             ]
         )
