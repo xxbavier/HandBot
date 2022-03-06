@@ -1057,15 +1057,14 @@ async def updateinfo(inter, url= None, vc= False):
 
 
 
-@int_bot.slash_command(name= "Request Streamer")
+@int_bot.slash_command()
 async def request_streamer():
     pass
 
 @int_bot.slash_command(
-    name= "Post Stream",
     options=[
         Option("team_one", "Enter the role of the team playing.", OptionType.ROLE, required= True),
-        Option("team_one", "Enter the role of the team playing.", OptionType.ROLE, required= True),
+        Option("team_two", "Enter the role of the team playing.", OptionType.ROLE, required= True),
         Option("stream_link", "Enter the stream link for your game.", OptionType.STRING, required= True)
     ]
 )
