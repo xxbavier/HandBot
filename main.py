@@ -51,7 +51,7 @@ htl_servers = {
 }
 
 def team_role_check(role):
-    htl = bot.get_channel(htl_servers["League"])
+    htl = bot.get_guild(htl_servers["League"])
 
     membership = htl.get_role(917043822402338886)
     end = htl.get_role(917043508509032508)
@@ -1055,19 +1055,25 @@ async def updateinfo(inter, url= None, vc= False):
         components=None
     )
 
-
+@int_bot.slash_command(
+    #options = [
+    #    Option("team_one", "Enter the role of the team playing.", OptionType., required= True)
+    #]
+)
+async def post_clip(inter, content):
+    print(content)
 
 @int_bot.slash_command()
 async def request_streamer():
     pass
 
-@int_bot.slash_command(
+'''@int_bot.slash_command(
     options=[
         Option("team_one", "Enter the role of the team playing.", OptionType.ROLE, required= True),
         Option("team_two", "Enter the role of the team playing.", OptionType.ROLE, required= True),
         Option("stream_link", "Enter the stream link for your game.", OptionType.STRING, required= True)
     ]
-)
+)'''
 async def post_stream(inter, team_one, team_two, stream_link):
     author = inter.author
     htl = bot.get_channel(htl_servers["League"])
@@ -1075,28 +1081,30 @@ async def post_stream(inter, team_one, team_two, stream_link):
     if not 922406011690700830 in author.roles:
         await inter.create_response(
             embed= error("Post Stream", "You must be a streamer to use this command.".format(team_one.name)),
-            ephemerical= True
+            ephemeral= True
         )
 
     if team_role_check(team_one):
         await inter.create_response(
             embed= error("Post Stream", "\"{}\" is not a valid team.".format(team_one.name)),
-            ephemerical= True
+            ephemeral= True
         )
     
     if team_role_check(team_two):
         await inter.create_response(
             embed= error("Post Stream", "\"{}\" is not a valid team.".format(team_two.name)),
-            ephemerical= True
+            ephemeral= True
         )
 
     if team_one == team_two:
         await inter.create_response(
             embed= error("Post Stream", "Both teams are the same."),
-            ephemerical= True
+            ephemeral= True
         )
 
     embed = discord.Embed(title="Stream Post Request", description= "Please review the information below. If you are ready to submit this request, press the green button. If not, press the red button. A Director+ will receive this request and will be allowed to approve/decline it.", colour= discord.Colour.red())
+    embed.add_field(name= "``Game``", value= "**{}** *vs* **{}**".format(team_one.name, team_two.name))
+    embed.add_field(name= "``Stream Link``", value= stream_link)
     await inter.create_response(
         embed= embed,
         components= [
@@ -1105,7 +1113,7 @@ async def post_stream(inter, team_one, team_two, stream_link):
                 Button(label="❌",  style= ButtonStyle.red)
             )
         ],
-        ephemerical= True
+        ephemeral= True
     )
 
 
@@ -1116,7 +1124,7 @@ async def post_stream(inter, team_one, team_two, stream_link):
         else:
             await inter.create_response(
                 embed= error("Post Stream", "Cancelling."),
-                ephemerical= True
+                ephemeral= True
             )
 
 
