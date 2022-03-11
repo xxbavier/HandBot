@@ -11,7 +11,6 @@ from discord.ext import commands, tasks
 from discord.utils import parse_time
 from dislash import InteractionClient, ActionRow, Button, ButtonStyle, SelectMenu, SelectOption, ContextMenuInteraction, Option, OptionType
 from dislash.interactions.message_components import Component
-import psycopg2
 
 import keep_alive
 import json
@@ -136,20 +135,18 @@ token = config.get('token')
 @bot.event
 async def on_message(msg):
   if(msg.channel.id == 917103851092476074):
-    if (msg.content.startswith('<:twitter:831307974533316648>')):
-      verified =  True
-      for role in msg.author.roles:
-        if role.id == 823156809795633154:
-          verified =  False
-      
-      if verified:
-        await msg.add_reaction('<:verified:831316205745733672>')
+    if (msg.content.startswith('<:htl_twitter:951619979252482088>')):
+      if teamCheck(msg.author, msg.guild):
+        await msg.add_reaction('<:htl_verified:951652612120395846>')
       
       await msg.add_reaction('❤️')
-      await msg.add_reaction('<:repost:831318107574370365>')
+      await msg.add_reaction('<:htl_retweet:951620081488642068>')
       
     else:
-      await msg.delete()
+        try:
+            await msg.delete()
+        except Exception:
+            pass
   await bot.process_commands(msg)
 
 @bot.event
@@ -1067,40 +1064,49 @@ async def post_clip(inter, content):
 async def request_streamer():
     pass
 
-'''@int_bot.slash_command(
+@int_bot.slash_command(
     options=[
         Option("team_one", "Enter the role of the team playing.", OptionType.ROLE, required= True),
         Option("team_two", "Enter the role of the team playing.", OptionType.ROLE, required= True),
         Option("stream_link", "Enter the stream link for your game.", OptionType.STRING, required= True)
     ]
-)'''
+)
 async def post_stream(inter, team_one, team_two, stream_link):
     author = inter.author
     htl = bot.get_channel(htl_servers["League"])
 
     if not 922406011690700830 in author.roles:
+        print(922406011690700830 in author.roles)
         await inter.create_response(
-            embed= error("Post Stream", "You must be a streamer to use this command.".format(team_one.name)),
+            embed= error("Post Stream", "You must be a streamer to use this command."),
             ephemeral= True
         )
 
-    if team_role_check(team_one):
+        return
+
+    if not team_role_check(team_one):
         await inter.create_response(
             embed= error("Post Stream", "\"{}\" is not a valid team.".format(team_one.name)),
             ephemeral= True
         )
+
+        return
     
-    if team_role_check(team_two):
+    if not team_role_check(team_two):
         await inter.create_response(
             embed= error("Post Stream", "\"{}\" is not a valid team.".format(team_two.name)),
             ephemeral= True
         )
+
+        return
 
     if team_one == team_two:
         await inter.create_response(
             embed= error("Post Stream", "Both teams are the same."),
             ephemeral= True
         )
+
+        return
 
     embed = discord.Embed(title="Stream Post Request", description= "Please review the information below. If you are ready to submit this request, press the green button. If not, press the red button. A Director+ will receive this request and will be allowed to approve/decline it.", colour= discord.Colour.red())
     embed.add_field(name= "``Game``", value= "**{}** *vs* **{}**".format(team_one.name, team_two.name))
