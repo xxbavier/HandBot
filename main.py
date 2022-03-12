@@ -594,7 +594,6 @@ async def promote(inter, player= None, coach= None):
         ephemeral= True
     )
 
-
 @int_bot.slash_command(
     description= "Demote players to a coaching position or regular player. Must be a Team Owner.",
     options=[
@@ -1235,6 +1234,7 @@ async def resources(inter, channel):
                 SelectOption(label= "Team Owner", value="https://forms.gle/UV8WAfYVA5yD7jaX8"),
                 SelectOption(label= "Streamer", value="https://forms.gle/nqoKMc87xJGZer5AA"),
                 SelectOption(label= "Media", value= "https://forms.gle/LXXdmS5vWwQ3ZhYq7"),
+                SelectOption(label= "Gamenight/Pickups Host", value= "__**HTL Is Looking for Event Hosts!**__\n\nYou **MUST** meet the following requirements to become an Event Host:\n- For those interested in hosting pickups, you must know how to run an Handball Association private server.\n- You must be active as an event host.\n\nIf you meet the listed requirements, you may message {} to become an Event Host.".format("<@!708373801615753295>"))
                 #SelectOption(label= "Referee", value= ""),
                 #SelectOption(lable= "")
 
