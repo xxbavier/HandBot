@@ -1233,7 +1233,11 @@ async def resources(inter, channel):
             max_values=1,
             options=[
                 SelectOption(label= "Team Owner", value="https://forms.gle/UV8WAfYVA5yD7jaX8"),
-                SelectOption(label= "Streamer", value="https://forms.gle/nqoKMc87xJGZer5AA")
+                SelectOption(label= "Streamer", value="https://forms.gle/nqoKMc87xJGZer5AA"),
+                SelectOption(label= "Media", value= "https://forms.gle/LXXdmS5vWwQ3ZhYq7"),
+                #SelectOption(label= "Referee", value= ""),
+                #SelectOption(lable= "")
+
             ]
         )
 
