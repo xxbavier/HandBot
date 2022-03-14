@@ -1,7 +1,8 @@
-from datetime import time
+import time
 from dis import disco
 from email import message
 from pydoc import describe
+import sqlite3
 from ssl import Options
 from urllib import response
 import discord
@@ -11,6 +12,7 @@ from discord.ext import commands, tasks
 from discord.utils import parse_time
 from dislash import InteractionClient, ActionRow, Button, ButtonStyle, SelectMenu, SelectOption, ContextMenuInteraction, Option, OptionType
 from dislash.interactions.message_components import Component
+import psycopg2
 
 import keep_alive
 import json
@@ -1234,8 +1236,8 @@ async def resources(inter, channel):
                 SelectOption(label= "Team Owner", value="https://forms.gle/UV8WAfYVA5yD7jaX8"),
                 SelectOption(label= "Streamer", value="https://forms.gle/nqoKMc87xJGZer5AA"),
                 SelectOption(label= "Media", value= "https://forms.gle/LXXdmS5vWwQ3ZhYq7"),
-                SelectOption(label= "Gamenight/Pickups Host", value= "__**HTL Is Looking for Event Hosts!**__\n\nYou **MUST** meet the following requirements to become an Event Host:\n- For those interested in hosting pickups, you must know how to run an Handball Association private server.\n- You must be active as an event host.\n\nIf you meet the listed requirements, you may message {} to become an Event Host.".format("<@!708373801615753295>"))
-                #SelectOption(label= "Referee", value= ""),
+                #SelectOption(label= "Gamenight/Pickups Host", value= "__**HTL Is Looking for Event Hosts!**__\n\nYou **MUST** meet the following requirements to become an Event Host:\n- For those interested in hosting pickups, you must know how to run an Handball Association private server.\n- You must be active as an event host.\n\nIf you meet the listed requirements, you may message {} to become an Event Host.".format("<@!708373801615753295>"))
+                SelectOption(label= "Referee", value= "https://forms.gle/b9MqJcPSiuoXaACE8"),
                 #SelectOption(lable= "")
 
             ]
@@ -1377,6 +1379,70 @@ async def resources(inter, channel):
                 components=[action]
             )
 
+@int_bot.slash_command()
+async def media_ping(inter):
+    channel = inter.channel
+
+    if not channel.category_id == 916129517830037515:
+        await inter.create_response(
+            embed= error("Media Ping", "Command must be used in a media channel."),
+            ephemeral= True
+        )
+        return
+
+    try:
+        conn = psycopg2.connect(host= "ec2-23-23-162-138.compute-1.amazonaws.com", dbname="d2m6dv5ob6vvhd", user="yulopqnbwringk", password="554b54b2a437f704824a09b2602a68d1f7c9269e4307d7f4d71dcbd080736ce2")
+
+        with conn:
+            with conn.cursor() as cur:
+                try:
+                    cur.execute("CREATE TABLE mediaPings(id BIGINT, time INT)")
+                except Exception:
+                    pass
+                    
+                conn.rollback()
+                cur.execute("SELECT * FROM mediaPings where id= {}".format(channel.id))
+
+                all_data = cur.fetchall()
+
+                data = None
+
+                for row in all_data:
+                    if int(row[0]) == int(channel.id):
+                        data = row
+                        break
+
+                current_time = round(time.time())
+
+                if data != None:
+                    previous_time = data[1]
+
+                    difference = current_time - previous_time
+
+                    if not difference >= (60 * 120):
+                        difference /= 60
+                        difference /= 60
+
+                        await inter.create_response(
+                            embed= error("Media Ping", "You can only use this command once every 2 hours. You have last used this command {} hours ago.".format(round(difference, 2))),
+                            ephemeral = True
+                        )
+
+                        conn.commit()
+
+                        return
+                    else:
+                        cur.execute("UPDATE mediaPings SET time= {} where id= {}".format(current_time, channel.id))
+
+                else:
+                    cur.execute("INSERT INTO mediaPings(id, time) VALUES ({}, {})".format(channel.id, current_time))
+        
+            conn.commit()
+
+        await bot.get_channel(channel.id).send("*New media notification, <@&944096313966989342>! You may unsubscribe to media pings in <#944094182631407636>.*")
+        await inter.create_response(embed= discord.Embed(title="Success", colour= discord.Colour.green()), ephemeral= True)
+    except Exception:
+       await inter.create_response(embed= error("Media Ping", "Command unexpectedly error'd."), ephemeral= True)
     
 """    
 @int_bot.slash_command(
