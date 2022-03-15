@@ -1137,7 +1137,7 @@ async def request(inter, gametime):
 
             conn = psycopg2.connect(host= "ec2-23-23-162-138.compute-1.amazonaws.com", dbname="d2m6dv5ob6vvhd", user="yulopqnbwringk", password="554b54b2a437f704824a09b2602a68d1f7c9269e4307d7f4d71dcbd080736ce2")
 
-            if False:
+            if True:
                 with conn:
                     with conn.cursor() as cur:
                         try:
@@ -1165,7 +1165,7 @@ async def request(inter, gametime):
 
                             difference = current_time - previous_time
 
-                            if not difference >= (60 * 60):
+                            if not difference >= (60 * 30):
                                 difference /= 60
                                 difference /= 60
 
