@@ -1,3 +1,6 @@
+from cProfile import label
+from re import A
+import re
 import time
 from dis import disco
 from email import message
@@ -86,8 +89,8 @@ def teamCheck(user, htl):
     '''
     Checks to see if a player is on a valid team.
     
-    Returns True if player is on a team.
-    Returns False if player is not on a team.
+    Returns [True, team_role] if player is on a team.
+    Returns [False, team_role] if player is not on a team.
     '''
 
     membership = htl.get_role(917043822402338886)
@@ -108,7 +111,7 @@ def teamCheck(user, htl):
 
 
 def error(command, reason):
-    embed = discord.Embed(title="ERROR", description= "There was an error while executing this command.", colour= discord.Colour.red())
+    embed = discord.Embed(title="{} Error".format(command), description= "There was an error while executing this command.", colour= discord.Colour.red())
     embed.add_field(name="``Reason``", value=reason)
 
     return embed
@@ -222,7 +225,7 @@ async def sign(inter, players= None):
         return
 
     author = inter.author
-    htl = inter.guild
+    htl = bot.get_guild(htl_servers["League"])
 
     coach_level = coachCheck(author, htl)
     team_info = teamCheck(author, htl)
@@ -298,7 +301,7 @@ async def sign(inter, players= None):
 )
 async def suggest(inter, suggestion= None):
     author = inter.author
-    htl = inter.guild
+    htl = bot.get_guild(htl_servers["League"])
 
     await inter.create_response(
         embed = discord.Embed(title= "Your suggestion has been recorded.".format(author.name + "#" + author.discriminator), description= suggestion, colour= discord.Color.green()),
@@ -343,7 +346,7 @@ async def demand(inter, reason= None):
         return
 
     author = inter.author
-    htl = inter.guild
+    htl = bot.get_guild(htl_servers["League"])
 
     team_info = teamCheck(author, htl)
     coach_info = coachCheck(author, htl)
@@ -413,7 +416,7 @@ async def release(inter, players= None):
         return
         
     author = inter.author
-    htl = inter.guild
+    htl = bot.get_guild(htl_servers["League"])
 
     coach_level = coachCheck(author, htl)
     team_info = teamCheck(author, htl)
@@ -498,7 +501,7 @@ async def promote(inter, player= None, coach= None):
 
         return
     author = inter.author
-    htl = inter.guild
+    htl = bot.get_guild(htl_servers["League"])
 
     if author == player:
         await inter.create_response(
@@ -614,7 +617,7 @@ async def demote(inter, player= None, coach= None):
 
         return
     author = inter.author
-    htl = inter.guild
+    htl = bot.get_guild(htl_servers["League"])
 
     if coach != 0 and coach != 1:
         embed = error("demote", "Invalid coach level. If you attempted to transfer Team Owner, you must submit a ticket in <#917085749030031390> to request this.")
@@ -1061,9 +1064,212 @@ async def updateinfo(inter, url= None, vc= False):
 async def post_clip(inter, content):
     print(content)
 
-@int_bot.slash_command()
-async def request_streamer():
-    pass
+@int_bot.slash_command(
+    options = [
+        Option("gametime", "What time is this game?", OptionType.STRING, required= True)
+    ]
+)
+async def request(inter, gametime):
+    author = inter.author
+    htl = bot.get_guild(htl_servers["League"])
+
+    if not coachCheck(author, htl):
+        await inter.create_response(
+            embed= error("Request", "Must be a team coach to use this command."),
+            ephemeral= True
+        )
+        return
+
+    team_check = teamCheck(author, htl)
+
+    if not team_check[0]:
+        await inter.create_response(
+            embed= error("Request", "Must be on a team to use this command."),
+            ephemeral= True
+        )
+        return
+
+    embed = discord.Embed(title="Who are you requesting? Select from the dropdown.", description= "Requesting is limited to 1 request every hour per team.", colour= discord.Colour.blurple())
+
+    await inter.create_response(
+        embed= embed,
+        components= [
+            SelectMenu(
+                custom_id="Request",
+                placeholder="Select an option.",
+                max_values=2,
+                options=[
+                    SelectOption(label= "Referee", value= "953293440198787093"),
+                    SelectOption(label= "Streamer", value= "948415747116388362")
+                ]
+            )
+        ],
+        ephemeral= True
+    )
+
+    @int_bot.event
+    async def on_dropdown(intera):
+        if intera.component.custom_id != "Request":
+            return
+
+        team = teamCheck(author, htl)[1]
+
+        selected = intera.select_menu.selected_options
+        selected_str = []
+
+        succ_embed = discord.Embed(title="Requesting...", description= "Your team is on cooldown for 1 hour.", colour= discord.Colour.blurple())
+        
+        for select in selected:
+            selected_str.append(select.label)
+
+        succ_embed.add_field(name= "``Requesting the Following``", value= " and ".join(selected_str))
+
+        msg = await intera.create_response(
+            embed = succ_embed,
+            ephemeral = True
+        )
+
+        for job in selected:
+            embed = discord.Embed(title="{} Needed".format(job.label), description= "Requesting is limited to 1 request every hour per team.", colour= discord.Colour.blurple())
+            embed.add_field(name= "``Gametime``", value= gametime)
+            embed.add_field(name= "``Team``", value= teamCheck(author, htl)[1].name, inline=False)
+            embed.add_field(name= "``Coach``", value= author.name, inline=False)
+
+            conn = psycopg2.connect(host= "ec2-23-23-162-138.compute-1.amazonaws.com", dbname="d2m6dv5ob6vvhd", user="yulopqnbwringk", password="554b54b2a437f704824a09b2602a68d1f7c9269e4307d7f4d71dcbd080736ce2")
+
+            if False:
+                with conn:
+                    with conn.cursor() as cur:
+                        try:
+                            cur.execute("CREATE TABLE request_{}(id BIGINT, time INT)".format(job.label.lower()))
+                            conn.commit()
+                        except Exception:
+                            pass
+                            
+                        conn.rollback()
+                        cur.execute("SELECT * FROM request_{} where id= {}".format(job.label.lower(), team.id))
+
+                        all_data = cur.fetchall()
+
+                        data = None
+
+                        for row in all_data:
+                            if int(row[0]) == int(team.id):
+                                data = row
+                                break
+
+                        current_time = round(time.time())
+
+                        if data != None:
+                            previous_time = data[1]
+
+                            difference = current_time - previous_time
+
+                            if not difference >= (60 * 60):
+                                difference /= 60
+                                difference /= 60
+
+                                await inter.followup(
+                                    embed= error("Request {}".format(job.label), "You can only use this command once every hour. You have last used this command {} hours ago.".format(round(difference, 2))),
+                                    ephemeral = True
+                                )
+
+                                continue
+                            else:
+                                cur.execute("UPDATE request_{} SET time= {} where id= {}".format(job.label.lower(), current_time, team.id))
+
+                        else:
+                            cur.execute("INSERT INTO request_{}(id, time) VALUES ({}, {})".format(job.label.lower(), team.id, current_time))
+                
+                    conn.commit()
+
+            channel_id = int(job.value)
+            
+            await bot.get_channel(channel_id).send(
+                embed= embed,
+                components = [
+                    ActionRow(
+                        Button(label= "Claim", style= ButtonStyle.primary, custom_id= "Claim {}".format(job.label))
+                    )
+                ],
+                #content= "@everyone"
+            )
+
+            @int_bot.event
+            async def on_button_click(inter):
+                if inter.component.custom_id == "Claim Streamer":
+                    streamer = inter.author
+
+                    embed = discord.Embed(title="Streamer Found", description= "A streamer has claimed your game.", colour= discord.Colour.red())
+                    embed.add_field(name= "``Streamer``", value= "{} ({})".format(streamer.mention, streamer.name))
+
+                    await author.send(embed= embed)
+
+                    inter.component.disabled = True
+
+                    embed = discord.Embed(title="Streamer Needed", description= "Requesting is limited to 1 request every hour per team.", colour= discord.Colour.blurple())
+                    embed.add_field(name= "``Gametime``", value= gametime)
+                    embed.add_field(name= "``Team``", value= teamCheck(author, htl)[1].name, inline=False)
+                    embed.add_field(name= "``Coach``", value= author.name, inline=False)
+                    embed.add_field(name= "``Claimed by...``", value= "{} ({})".format(streamer.mention, streamer.name), inline=False)
+
+                    await inter.message.edit(
+                        embed= embed,
+                        components = []
+                    )
+
+                    await inter.create_response(
+                        embed= discord.Embed(title="Claimed".format(job.label), description= "You have claimed this game. The coach that requested you will now be notified.", colour= discord.Colour.green()),
+                        ephemeral= True
+                    )
+                elif inter.component.custom_id == "Claim Referee":
+                    referee = inter.author
+
+                    new_embed = discord.Embed(title="Referee Found".format(job.label), description= "A referee has claimed your game.", colour= discord.Colour.lighter_grey())
+
+                    otherRefs = []
+                    otherRefs.append("{} ({})\n".format(referee.mention, referee.name))
+
+                    for embed in inter.message.embeds:
+                        for field in embed.fields:
+                            if field.name == "``Claimed by...``":
+                                referees = field.value.split("\n")
+                                for ref in referees:
+                                    if ref.find(referee.name) > -1:
+                                        await inter.create_response(
+                                            embed= error("Claim Referee Spot", "You have already claimed this game."),
+                                            ephemeral= True
+                                        )
+
+                                        return
+
+                                    otherRefs.append(ref + "\n")
+
+                    new_embed.add_field(name= "``Referee(s)``", value= "".join(otherRefs))
+
+                    await author.send(embed= new_embed)
+
+                    embed = discord.Embed(title="Referee Needed", description= "Requesting is limited to 1 request every hour per team.", colour= discord.Colour.blurple())
+                    embed.add_field(name= "``Gametime``", value= gametime)
+                    embed.add_field(name= "``Team``", value= teamCheck(author, htl)[1].name, inline=False)
+                    embed.add_field(name= "``Coach``", value= author.name, inline=False)
+                    embed.add_field(name= "``Claimed by...``", value= "".join(otherRefs), inline=False)
+
+                    await inter.message.edit(
+                        embed= embed
+                    )
+
+                    if len(otherRefs) >= 2:
+                        await inter.message.edit(
+                            embed= embed,
+                            components= []
+                        )
+                    
+                    await inter.create_response(
+                        embed= discord.Embed(title="Claimed".format(job.label), description= "You have claimed this game. The coach that requested you will now be notified.", colour= discord.Colour.green()),
+                        ephemeral= True
+                    )
+
 
 @int_bot.slash_command(
     options=[
@@ -1471,7 +1677,6 @@ async def transaction(inter, user=None):
     emb.set_image(url=user.avatar_url)
     await inter.reply(embed=emb)
 """
-
 
 @int_bot.event
 async def on_dropdown(inter: int_bot):
