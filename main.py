@@ -1379,9 +1379,9 @@ async def post_stream(inter, team_one, team_two, stream_link):
 )
 async def get_emoji_color(inter, emoji):
     emoji = find_emojis(emoji)[0]
-    emoji_file = await emoji.url.save("cached_data/cached_emoji")
+    emoji_file = await emoji.url.save("cached_data/{}".format(emoji.name))
 
-    cf = ColorThief("cached_data/cached_emoji")
+    cf = ColorThief("cached_data/{}".format(emoji.name))
 
     rgb = cf.get_color()
 
@@ -1396,7 +1396,7 @@ async def get_emoji_color(inter, emoji):
         ephemeral= True
     )
 
-    os.remove("cached_data/cached_emoji")
+    os.remove("cached_data/{}".format(emoji.name))
 
 
 @int_bot.slash_command()
