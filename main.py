@@ -1,5 +1,4 @@
-from cProfile import label
-from re import A
+import os
 import re
 import time
 from dis import disco
@@ -16,6 +15,7 @@ from discord.utils import parse_time
 from dislash import InteractionClient, ActionRow, Button, ButtonStyle, SelectMenu, SelectOption, ContextMenuInteraction, Option, OptionType
 from dislash.interactions.message_components import Component
 import psycopg2
+from colorthief import ColorThief
 
 import keep_alive
 import json
@@ -57,6 +57,9 @@ htl_servers = {
     "Media": 928509118208180275
 }
 
+def rgb_to_hex(rgb):
+    return '%02x%02x%02x' % rgb
+
 def team_role_check(role):
     htl = bot.get_guild(htl_servers["League"])
 
@@ -66,6 +69,14 @@ def team_role_check(role):
     if role.position < end.position and role.position > membership.position:
         return True
     return False
+
+def find_emojis(msg):
+    custom_emojis = re.findall(r'<:\w*:\d*>', msg)
+    print(custom_emojis)
+    custom_emojis = [int(e.split(':')[2].replace('>', '')) for e in custom_emojis]
+    custom_emojis = [discord.utils.get(bot.emojis, id=e) for e in custom_emojis]
+
+    return custom_emojis
 
 def coachCheck(user, htl):
     '''
@@ -89,7 +100,7 @@ def coachCheck(user, htl):
     return 0
 
 def next_season_team_check(team):
-    if team.name.find(next_season_identifier) <= 0:
+    if team.name.find(next_season_identifier) >= 0:
         return True
     
     return False
@@ -110,10 +121,9 @@ def teamCheck(user, htl):
 
     for x in user.roles:
         if x.position < end.position and x.position > membership.position:
-            if x.name.find(next_season_identifier) >= 0:
-                onTeam = True
-                teamRole = x
-                break
+            onTeam = True
+            teamRole = x
+            break
         else:
             onTeam = False
         
@@ -1362,6 +1372,32 @@ async def post_stream(inter, team_one, team_two, stream_link):
                 embed= error("Post Stream", "Cancelling."),
                 ephemeral= True
             )
+
+@int_bot.slash_command(
+    options= [
+        Option("emoji", "Enter emoji here.", OptionType.STRING, required=True)
+    ]
+)
+async def get_emoji_color(inter, emoji):
+    emoji = find_emojis(emoji)[0]
+    emoji_file = await emoji.url.save("cached_data/cached_emoji")
+
+    cf = ColorThief("cached_data/cached_emoji")
+
+    rgb = cf.get_color()
+
+    hex = rgb_to_hex(rgb)
+
+    embed = discord.Embed(title="Roles", description= "Gain roles by reacting with the respective emoji.", colour= discord.Color.from_rgb(rgb[0], rgb[1], rgb[2]))
+    embed.add_field(name= "``Emoji``", value= emoji)
+    embed.add_field(name= "``HEX``", value= "#"+hex)
+
+    await inter.create_response(
+        embed= embed,
+        ephemeral= True
+    )
+
+    os.remove("cached_data/cached_emoji")
 
 
 @int_bot.slash_command()
