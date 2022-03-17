@@ -37,6 +37,9 @@ status = cycle(['Handball','Xavs Simulator'])
 
 transactions_enabled = True
 
+next_season_identifier = "S3"
+playoffs = True
+
 transactions_id = 917102767208816680
 
 teamOwner = 917068655928442930
@@ -85,6 +88,12 @@ def coachCheck(user, htl):
     
     return 0
 
+def next_season_team_check(team):
+    if team.name.find(next_season_identifier) <= 0:
+        return True
+    
+    return False
+
 def teamCheck(user, htl):
     '''
     Checks to see if a player is on a valid team.
@@ -101,9 +110,10 @@ def teamCheck(user, htl):
 
     for x in user.roles:
         if x.position < end.position and x.position > membership.position:
-            onTeam = True
-            teamRole = x
-            break
+            if x.name.find(next_season_identifier) >= 0:
+                onTeam = True
+                teamRole = x
+                break
         else:
             onTeam = False
         
@@ -232,6 +242,9 @@ async def sign(inter, players= None):
 
     valid_team = team_info[0]
     team_role = team_info[1]
+
+    if playoffs:
+        valid_team = next_season_team_check(team_role)
     
     if coach_level == 0 or not valid_team:
         await inter.create_response(
@@ -349,10 +362,17 @@ async def demand(inter, reason= None):
     htl = bot.get_guild(htl_servers["League"])
 
     team_info = teamCheck(author, htl)
+
+    valid_team = team_info[0]
+    team_role = team_info[1]
+
     coach_info = coachCheck(author, htl)
     demands_info = get_demands(author, htl)
 
-    if coach_info == 3 or not team_info[0]:
+    if playoffs:
+        valid_team = next_season_team_check(team_role)
+
+    if coach_info == 3 or not valid_team:
         await inter.create_response(
             embed= error("demand", "You must be on a valid team and not be a Team Owner to use this command."),
             ephemeral= True
@@ -423,6 +443,9 @@ async def release(inter, players= None):
 
     valid_team = team_info[0]
     team_role = team_info[1]
+
+    if playoffs:
+        valid_team = next_season_team_check(team_role)
     
     if coach_level == 0 or not valid_team:
         await inter.create_response(
