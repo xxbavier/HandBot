@@ -1383,7 +1383,7 @@ async def get_emoji_color(inter, emoji):
 
     cf = ColorThief("cached_data/{}".format(emoji.name))
 
-    rgb = cf.get_color()
+    rgb = cf.get_color(quality= 10)
 
     hex = rgb_to_hex(rgb)
 
