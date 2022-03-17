@@ -22,3 +22,5 @@ Werkzeug==2.0.1
 yarl==1.6.3
 Requests==2.26.0
 psycopg2==2.9.3
+Pillow==9.0.1
+colorthief==0.2.1

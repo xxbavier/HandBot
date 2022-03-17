@@ -72,7 +72,6 @@ def team_role_check(role):
 
 def find_emojis(msg):
     custom_emojis = re.findall(r'<:\w*:\d*>', msg)
-    print(custom_emojis)
     custom_emojis = [int(e.split(':')[2].replace('>', '')) for e in custom_emojis]
     custom_emojis = [discord.utils.get(bot.emojis, id=e) for e in custom_emojis]
 
