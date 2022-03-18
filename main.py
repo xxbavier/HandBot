@@ -117,16 +117,16 @@ def teamCheck(user, htl):
 
     onTeam = False
     teamRole = None
+    next_season_team = None
 
     for x in user.roles:
         if x.position < end.position and x.position > membership.position:
             onTeam = True
-            teamRole = x
-            break
-        else:
-            onTeam = False
+
+            if next_season_team_check(x):
+                next_season_team = x
         
-    return [onTeam, teamRole]
+    return [onTeam, teamRole, next_season_team]
 
 
 def error(command, reason):
@@ -233,16 +233,6 @@ def get_members_from_string(string, htl):
     ]
 )
 async def sign(inter, players= None):
-    if not transactions_enabled:
-        embed = error("sign", "Transactions are closed.")
-
-        await inter.create_response(
-            embed= embed,
-            ephemeral= True
-        )
-
-        return
-
     author = inter.author
     htl = bot.get_guild(htl_servers["League"])
 
@@ -251,13 +241,21 @@ async def sign(inter, players= None):
 
     valid_team = team_info[0]
     team_role = team_info[1]
+    next_season_team = team_info[2]
 
     if playoffs:
-        valid_team = next_season_team_check(team_role)
+        team_role = next_season_team
+
+    if (playoffs and (next_season_team is None)) or not transactions_enabled:
+        await inter.create_response(
+            embed= error("sign", "Transactions are closed."),
+            ephemeral= True
+        )
+        return
     
     if coach_level == 0 or not valid_team:
         await inter.create_response(
-            embed= error("release", "You must be a coach on a valid team to use this command."),
+            embed= error("sign", "You must be a coach on a valid team to use this command."),
             ephemeral= True
         )
         return
@@ -273,10 +271,18 @@ async def sign(inter, players= None):
     error_players = []
 
     for player in players:
-        if teamCheck(player, htl)[0] or len(team_role.members) >= 15 or player.bot:
+        player_team_info = teamCheck(player, htl)
+
+        if playoffs and not (player_team_info[2] is None):
             players.remove(player)
             error_players.append(player)
             continue
+
+        if player_team_info[0] and not playoffs:
+            if len(team_role.members) >= 15 or player.bot:
+                players.remove(player)
+                error_players.append(player)
+                continue
 
         await player.add_roles(team_role)
 
@@ -1315,7 +1321,6 @@ async def post_stream(inter, team_one, team_two, stream_link):
     htl = bot.get_channel(htl_servers["League"])
 
     if not 922406011690700830 in author.roles:
-        print(922406011690700830 in author.roles)
         await inter.create_response(
             embed= error("Post Stream", "You must be a streamer to use this command."),
             ephemeral= True
