@@ -125,6 +125,8 @@ def teamCheck(user, htl):
 
             if next_season_team_check(x):
                 next_season_team = x
+            else:
+                teamRole = x
         
     return [onTeam, teamRole, next_season_team]
 
