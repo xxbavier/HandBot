@@ -377,19 +377,19 @@ async def demand(inter, reason= None):
     htl = bot.get_guild(htl_servers["League"])
 
     team_info = teamCheck(author, htl)
-
-    valid_team = team_info[0]
-    team_role = team_info[1]
-
     coach_info = coachCheck(author, htl)
     demands_info = get_demands(author, htl)
 
-    if playoffs:
-        valid_team = next_season_team_check(team_role)
+    valid_team = team_info[0]
+    team_role = team_info[1]
+    next_season_team = team_info[2]
 
-    if coach_info == 3 or not valid_team:
+    if playoffs:
+        team_role = next_season_team
+
+    if (playoffs and (next_season_team is None)) or not transactions_enabled:
         await inter.create_response(
-            embed= error("demand", "You must be on a valid team and not be a Team Owner to use this command."),
+            embed= error("sign", "Transactions are closed."),
             ephemeral= True
         )
         return
@@ -458,13 +458,14 @@ async def release(inter, players= None):
 
     valid_team = team_info[0]
     team_role = team_info[1]
+    next_season_team = team_info[2]
 
     if playoffs:
-        valid_team = next_season_team_check(team_role)
-    
-    if coach_level == 0 or not valid_team:
+        team_role = next_season_team
+
+    if (playoffs and (next_season_team is None)) or not transactions_enabled:
         await inter.create_response(
-            embed= error("release", "You must be a coach on a valid team to use this command."),
+            embed= error("sign", "Transactions are closed."),
             ephemeral= True
         )
         return
@@ -480,10 +481,18 @@ async def release(inter, players= None):
     error_players = []
 
     for player in players:
-        if teamCheck(player, htl)[1] != team_role:
+        player_team_info = teamCheck(player, htl)
+
+        if playoffs and (player_team_info[2] is None):
             players.remove(player)
             error_players.append(player)
             continue
+
+        if player_team_info[0] and not playoffs:
+            if teamCheck(player, htl)[1] != team_role:
+                players.remove(player)
+                error_players.append(player)
+                continue
         
         await player.remove_roles(team_role)
 
