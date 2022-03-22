@@ -1,4 +1,5 @@
-import os
+from cProfile import label
+from re import A
 import re
 import time
 from dis import disco
@@ -15,7 +16,6 @@ from discord.utils import parse_time
 from dislash import InteractionClient, ActionRow, Button, ButtonStyle, SelectMenu, SelectOption, ContextMenuInteraction, Option, OptionType
 from dislash.interactions.message_components import Component
 import psycopg2
-from colorthief import ColorThief
 
 import keep_alive
 import json
@@ -37,9 +37,6 @@ status = cycle(['Handball','Xavs Simulator'])
 
 transactions_enabled = True
 
-next_season_identifier = "S3"
-playoffs = True
-
 transactions_id = 917102767208816680
 
 teamOwner = 917068655928442930
@@ -57,9 +54,6 @@ htl_servers = {
     "Media": 928509118208180275
 }
 
-def rgb_to_hex(rgb):
-    return '%02x%02x%02x' % rgb
-
 def team_role_check(role):
     htl = bot.get_guild(htl_servers["League"])
 
@@ -69,13 +63,6 @@ def team_role_check(role):
     if role.position < end.position and role.position > membership.position:
         return True
     return False
-
-def find_emojis(msg):
-    custom_emojis = re.findall(r'<:\w*:\d*>', msg)
-    custom_emojis = [int(e.split(':')[2].replace('>', '')) for e in custom_emojis]
-    custom_emojis = [discord.utils.get(bot.emojis, id=e) for e in custom_emojis]
-
-    return custom_emojis
 
 def coachCheck(user, htl):
     '''
@@ -98,12 +85,6 @@ def coachCheck(user, htl):
     
     return 0
 
-def next_season_team_check(team):
-    if team.name.find(next_season_identifier) >= 0:
-        return True
-    
-    return False
-
 def teamCheck(user, htl):
     '''
     Checks to see if a player is on a valid team.
@@ -117,18 +98,16 @@ def teamCheck(user, htl):
 
     onTeam = False
     teamRole = None
-    next_season_team = None
 
     for x in user.roles:
         if x.position < end.position and x.position > membership.position:
             onTeam = True
-
-            if next_season_team_check(x):
-                next_season_team = x
-            else:
-                teamRole = x
+            teamRole = x
+            break
+        else:
+            onTeam = False
         
-    return [onTeam, teamRole, next_season_team]
+    return [onTeam, teamRole]
 
 
 def error(command, reason):
@@ -235,6 +214,16 @@ def get_members_from_string(string, htl):
     ]
 )
 async def sign(inter, players= None):
+    if not transactions_enabled:
+        embed = error("sign", "Transactions are closed.")
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+
+        return
+
     author = inter.author
     htl = bot.get_guild(htl_servers["League"])
 
@@ -243,21 +232,10 @@ async def sign(inter, players= None):
 
     valid_team = team_info[0]
     team_role = team_info[1]
-    next_season_team = team_info[2]
-
-    if playoffs:
-        team_role = next_season_team
-
-    if (playoffs and (next_season_team is None)) or not transactions_enabled:
-        await inter.create_response(
-            embed= error("sign", "Transactions are closed."),
-            ephemeral= True
-        )
-        return
     
     if coach_level == 0 or not valid_team:
         await inter.create_response(
-            embed= error("sign", "You must be a coach on a valid team to use this command."),
+            embed= error("release", "You must be a coach on a valid team to use this command."),
             ephemeral= True
         )
         return
@@ -273,18 +251,10 @@ async def sign(inter, players= None):
     error_players = []
 
     for player in players:
-        player_team_info = teamCheck(player, htl)
-
-        if playoffs and not (player_team_info[2] is None):
+        if teamCheck(player, htl)[0] or len(team_role.members) >= 15 or player.bot:
             players.remove(player)
             error_players.append(player)
             continue
-
-        if player_team_info[0] and not playoffs:
-            if len(team_role.members) >= 15 or player.bot:
-                players.remove(player)
-                error_players.append(player)
-                continue
 
         await player.add_roles(team_role)
 
@@ -382,16 +352,9 @@ async def demand(inter, reason= None):
     coach_info = coachCheck(author, htl)
     demands_info = get_demands(author, htl)
 
-    valid_team = team_info[0]
-    team_role = team_info[1]
-    next_season_team = team_info[2]
-
-    if playoffs:
-        team_role = next_season_team
-
-    if (playoffs and (next_season_team is None)) or not transactions_enabled:
+    if coach_info == 3 or not team_info[0]:
         await inter.create_response(
-            embed= error("sign", "Transactions are closed."),
+            embed= error("demand", "You must be on a valid team and not be a Team Owner to use this command."),
             ephemeral= True
         )
         return
@@ -460,14 +423,10 @@ async def release(inter, players= None):
 
     valid_team = team_info[0]
     team_role = team_info[1]
-    next_season_team = team_info[2]
-
-    if playoffs:
-        team_role = next_season_team
-
-    if (playoffs and (next_season_team is None)) or not transactions_enabled:
+    
+    if coach_level == 0 or not valid_team:
         await inter.create_response(
-            embed= error("sign", "Transactions are closed."),
+            embed= error("release", "You must be a coach on a valid team to use this command."),
             ephemeral= True
         )
         return
@@ -483,18 +442,10 @@ async def release(inter, players= None):
     error_players = []
 
     for player in players:
-        player_team_info = teamCheck(player, htl)
-
-        if playoffs and (player_team_info[2] is None):
+        if teamCheck(player, htl)[1] != team_role:
             players.remove(player)
             error_players.append(player)
             continue
-
-        if player_team_info[0] and not playoffs:
-            if teamCheck(player, htl)[1] != team_role:
-                players.remove(player)
-                error_players.append(player)
-                continue
         
         await player.remove_roles(team_role)
 
@@ -1241,7 +1192,7 @@ async def request(inter, gametime):
                         Button(label= "Claim", style= ButtonStyle.primary, custom_id= "Claim {}".format(job.label))
                     )
                 ],
-                #content= "@everyone"
+                content= "@everyone"
             )
 
             @int_bot.event
@@ -1332,6 +1283,7 @@ async def post_stream(inter, team_one, team_two, stream_link):
     htl = bot.get_channel(htl_servers["League"])
 
     if not 922406011690700830 in author.roles:
+        print(922406011690700830 in author.roles)
         await inter.create_response(
             embed= error("Post Stream", "You must be a streamer to use this command."),
             ephemeral= True
@@ -1387,32 +1339,6 @@ async def post_stream(inter, team_one, team_two, stream_link):
                 embed= error("Post Stream", "Cancelling."),
                 ephemeral= True
             )
-
-@int_bot.slash_command(
-    options= [
-        Option("emoji", "Enter emoji here.", OptionType.STRING, required=True)
-    ]
-)
-async def get_emoji_color(inter, emoji):
-    emoji = find_emojis(emoji)[0]
-    emoji_file = await emoji.url.save("cached_data/{}".format(emoji.name))
-
-    cf = ColorThief("cached_data/{}".format(emoji.name))
-
-    rgb = cf.get_color(quality= 10)
-
-    hex = rgb_to_hex(rgb)
-
-    embed = discord.Embed(title="Roles", description= "Gain roles by reacting with the respective emoji.", colour= discord.Color.from_rgb(rgb[0], rgb[1], rgb[2]))
-    embed.add_field(name= "``Emoji``", value= emoji)
-    embed.add_field(name= "``HEX``", value= "#"+hex)
-
-    await inter.create_response(
-        embed= embed,
-        ephemeral= True
-    )
-
-    os.remove("cached_data/{}".format(emoji.name))
 
 
 @int_bot.slash_command()
