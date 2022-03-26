@@ -107,9 +107,9 @@ def teamCheck(user, htl):
             onTeam = True
 
             if not x.name.find(next_season_name):
-                teamRole = x
-            else:
-                next_season = x
+                continue
+            
+            teamRole = x
             break
         else:
             onTeam = False
@@ -238,7 +238,7 @@ async def sign(inter, players= None):
     team_info = teamCheck(author, htl)
 
     valid_team = team_info[0]
-    team_role = team_info[2]
+    team_role = team_info[1]
     
     if coach_level == 0 or not (team_role is None):
         await inter.create_response(
@@ -258,7 +258,7 @@ async def sign(inter, players= None):
     error_players = []
 
     for player in players:
-        if not (teamCheck(player, htl)[2]) is None or len(team_role.members) >= 15 or player.bot:
+        if not (teamCheck(player, htl)[1]) is None or len(team_role.members) >= 15 or player.bot:
             players.remove(player)
             error_players.append(player)
             continue
@@ -429,7 +429,7 @@ async def release(inter, players= None):
     team_info = teamCheck(author, htl)
 
     valid_team = team_info[0]
-    team_role = team_info[2]
+    team_role = team_info[1]
     
     if coach_level == 0 or not valid_team:
         await inter.create_response(
@@ -449,7 +449,7 @@ async def release(inter, players= None):
     error_players = []
 
     for player in players:
-        if teamCheck(player, htl)[2] != team_role:
+        if teamCheck(player, htl)[1] != team_role:
             players.remove(player)
             error_players.append(player)
             continue
