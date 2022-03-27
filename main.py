@@ -235,7 +235,7 @@ async def sign(inter, players= None):
     
     if coach_level == 0 or not valid_team:
         await inter.create_response(
-            embed= error("release", "You must be a coach on a valid team to use this command."),
+            embed= error("sign", "You must be a coach on a valid team to use this command."),
             ephemeral= True
         )
         return
@@ -1561,7 +1561,8 @@ async def resources(inter, channel):
 
             'Handball: The League v2': {
                 'Season 1': "Stats for Season 1 have been lost.",
-                'Season 2': "Coming soon..."
+                'Season 2': "https://docs.google.com/spreadsheets/d/1YrBNG7pYpCVpzQEFJhDa22ZXGp6RIx36koFxJyZIj3g/edit?usp=sharing.",
+                'Season 3': "Coming soon..."
             }
         }
 
@@ -1584,6 +1585,9 @@ async def resources(inter, channel):
                 embed= embed,
                 components=[action]
             )
+
+    elif channel.id == channels["Help"]:
+        pass
 
 @int_bot.slash_command()
 async def media_ping(inter):
