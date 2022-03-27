@@ -43,8 +43,6 @@ teamOwner = 917068655928442930
 headCoach = 917068674626646027
 assistantCoach = 917068697334595664
 
-next_season_name = "S3"
-
 demands = {
     2: 942302221696135198,
     1: 942302278054985808,
@@ -100,21 +98,16 @@ def teamCheck(user, htl):
 
     onTeam = False
     teamRole = None
-    next_season = None
 
     for x in user.roles:
         if x.position < end.position and x.position > membership.position:
             onTeam = True
-
-            if not x.name.find(next_season_name):
-                continue
-            
             teamRole = x
             break
         else:
             onTeam = False
         
-    return [onTeam, teamRole, next_season]
+    return [onTeam, teamRole]
 
 
 def error(command, reason):
@@ -240,7 +233,7 @@ async def sign(inter, players= None):
     valid_team = team_info[0]
     team_role = team_info[1]
     
-    if coach_level == 0 or not (team_role is None):
+    if coach_level == 0 or not valid_team:
         await inter.create_response(
             embed= error("release", "You must be a coach on a valid team to use this command."),
             ephemeral= True
@@ -258,7 +251,7 @@ async def sign(inter, players= None):
     error_players = []
 
     for player in players:
-        if not (teamCheck(player, htl)[1]) is None or len(team_role.members) >= 15 or player.bot:
+        if teamCheck(player, htl)[0] or len(team_role.members) >= 15 or player.bot:
             players.remove(player)
             error_players.append(player)
             continue
