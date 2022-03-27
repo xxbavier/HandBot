@@ -1199,7 +1199,7 @@ async def request(inter, gametime):
                         Button(label= "Claim", style= ButtonStyle.primary, custom_id= "Claim {}".format(job.label))
                     )
                 ],
-                content= "@everyone"
+                #content= "@everyone"
             )
 
             @int_bot.event
