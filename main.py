@@ -1561,7 +1561,7 @@ async def resources(inter, channel):
 
             'Handball: The League v2': {
                 'Season 1': "Stats for Season 1 have been lost.",
-                'Season 2': "https://docs.google.com/spreadsheets/d/1YrBNG7pYpCVpzQEFJhDa22ZXGp6RIx36koFxJyZIj3g/edit?usp=sharing.",
+                'Season 2': "https://docs.google.com/spreadsheets/d/1YrBNG7pYpCVpzQEFJhDa22ZXGp6RIx36koFxJyZIj3g/edit?usp=sharing",
                 'Season 3': "Coming soon..."
             }
         }
