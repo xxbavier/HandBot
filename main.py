@@ -1724,6 +1724,8 @@ async def on_dropdown(inter: int_bot):
 
         guild = inter.guild
 
+        
+
         team = [discord.utils.get(guild.roles, name=team.label) for r in guild.roles][0]
         
         embed = discord.Embed(title= team.name, colour= team.colour)
