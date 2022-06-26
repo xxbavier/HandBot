@@ -43,6 +43,7 @@ teamOwner = 917068655928442930
 headCoach = 917068674626646027
 assistantCoach = 917068697334595664
 
+yeah = True
 
 demands = {
     2: 942302221696135198,
