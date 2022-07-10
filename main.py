@@ -1,3 +1,4 @@
+from asyncio import events
 from cProfile import label
 from re import A
 import re
@@ -16,6 +17,7 @@ from discord.utils import parse_time
 from dislash import InteractionClient, ActionRow, Button, ButtonStyle, SelectMenu, SelectOption, ContextMenuInteraction, Option, OptionType
 from dislash.interactions.message_components import Component
 import psycopg2
+import requests
 
 import keep_alive
 import json
@@ -42,8 +44,6 @@ transactions_id = 917102767208816680
 teamOwner = 917068655928442930
 headCoach = 917068674626646027
 assistantCoach = 917068697334595664
-
-yeah = True
 
 demands = {
     2: 942302221696135198,
@@ -173,6 +173,104 @@ async def on_member_remove(member):
             await htl.get_channel(943324167154053250).send(embed= embed)
 
             break
+
+
+events_channel = 900511820643725312      
+@int_bot.slash_command(
+    description= "Post a gamenight",
+    options=[
+        Option("url", "Enter the gamenight URL", OptionType.STRING, required= True),
+        Option("vc", "Will this gamenight be in a VC as well? T/F", OptionType.BOOLEAN)
+        # By default, Option is optional
+        # Pass required=True to make it a required arg
+    ]
+)
+async def gamenight(inter, url= None, vc= False):
+    if not (inter.guild.id == 823037558027321374):
+        return
+
+    valid_domains = [
+        "roblox"
+    ]
+
+    author = inter.author
+    guild = inter.guild
+
+    valid = False
+
+    for role in author.roles:
+        if role.name.find("Community"):
+            valid = True
+
+    if not valid:
+        embed = discord.Embed(title="Error", description= "You do not have permission to run this command.", colour= discord.Colour.red())
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral = True
+        )
+        return
+
+    try:
+        response = requests.get(url)
+    except:
+        embed = discord.Embed(title="Error", description= "Invalid URL.", colour= discord.Colour.red())
+        await inter.create_response(
+            embed= embed,
+            ephemeral = True
+        )
+        return
+
+    valid_url = False
+
+    for domain in valid_domains:
+        if url.find(domain):
+            valid_url = True
+
+    if not valid_url:
+        embed = discord.Embed(title="Error", description= "Invalid URL domain.", colour= discord.Colour.red())
+
+        list_of_domains = ""
+
+        for domain in valid_domains:
+            list_of_domains += "\n- *()*".format(domain)
+
+        list_of_domains += "\n- *More coming soon...*"
+
+        embed.add_field(name= "``List of Valid Domains``", value= list_of_domains)
+
+        await inter.create_response(
+            embed= embed,
+            ephemeral = True
+        )
+
+        return
+
+    embed = discord.Embed(title="Sending...", description= "Your gamenight is being posted.", colour= discord.Colour.green())
+
+    await inter.create_response(
+        embed= embed,
+        ephemeral = True
+    )
+
+    embed = discord.Embed(title="New Gamenight!", description= "New gamenight hosted by {}.".format(author.mention), colour= discord.Colour.blurple())
+
+    def in_vc():
+        if vc:
+            return "This gamenight will be using a Voice Channel."
+        else:
+            return "This gamenight will not be using a Voice Channel."
+
+    embed.add_field(name="``Voice Channel?``", value= in_vc())
+
+    await bot.get_channel(events_channel).send(
+        content= "<@&900551881003237426>",
+        embed= embed
+    )
+
+    await bot.get_channel(events_channel).send(
+        content= url
+    )
 
 
 def transactionEmbed(emoji, team_role):
