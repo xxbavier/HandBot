@@ -180,13 +180,17 @@ events_channel = 900511820643725312
     description= "Post a gamenight",
     options=[
         Option("url", "Enter the gamenight URL", OptionType.STRING, required= True),
+        Option("message", "Is there anything you'd like to say along with this post?", OptionType.STRING),
         Option("vc", "Will this gamenight be in a VC as well? T/F", OptionType.BOOLEAN)
         # By default, Option is optional
         # Pass required=True to make it a required arg
     ]
 )
-async def gamenight(inter, url= None, vc= False):
+async def gamenight(inter, url= None, message= None, vc= False):
     if not (inter.guild.id == 823037558027321374):
+        return
+
+    if (not ((inter.guild.get_role(900227753880727562) in inter.author.roles) or (inter.guild.get_role(900227926337912842) in inter.author.roles))):
         return
 
     valid_domains = [
@@ -255,13 +259,16 @@ async def gamenight(inter, url= None, vc= False):
 
     embed = discord.Embed(title="New Gamenight!", description= "New gamenight hosted by {}.".format(author.mention), colour= discord.Colour.blurple())
 
+    if message is not None:
+        embed.add_field(name="``Message from {}``".format(inter.author.name), value= message, inline= False)
+
     def in_vc():
         if vc:
             return "This gamenight will be using a Voice Channel."
         else:
             return "This gamenight will not be using a Voice Channel."
 
-    embed.add_field(name="``Voice Channel?``", value= in_vc())
+    embed.add_field(name="``Voice Channel?``", value= in_vc(), inline= False)
 
     await bot.get_channel(events_channel).send(
         content= "<@&900551881003237426>",
