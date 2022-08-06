@@ -554,7 +554,7 @@ async def release(inter, players= None):
             error_players.append(player)
             continue
         
-        await player.remove_roles(team_role)
+        await player.remove_roles(team_role, htl.get_role(assistantCoach), htl.get_role(headCoach))
 
         noti= discord.Embed(title= "You have been released from: {} {}".format(e, team_role.name), description= "", colour= discord.Color.red())
         noti.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
