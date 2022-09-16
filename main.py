@@ -659,9 +659,9 @@ async def promote(inter, player= None, coach= None):
     valid_team = team_info[0]
     team_role = team_info[1]
     
-    if coach_level != 3 and not valid_team:
+    if coach_level != 3 or not valid_team:
         await inter.create_response(
-            embed= error("promote", "You must be a coach on a valid team to use this command."),
+            embed= error("promote", "You must be a team owner on a valid team to use this command."),
             ephemeral= True
         )
         return
@@ -768,10 +768,10 @@ async def demote(inter, player= None, coach= None):
 
     valid_team = team_info[0]
     team_role = team_info[1]
-    
-    if coach_level != 3 and not valid_team:
+
+    if coach_level != 3 or not valid_team:
         await inter.create_response(
-            embed= error("demote", "You must be a coach on a valid team to use this command."),
+            embed= error("demote", "You must be a team owner on a valid team to use this command."),
             ephemeral= True
         )
         return
