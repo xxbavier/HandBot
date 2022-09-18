@@ -1,21 +1,15 @@
 from asyncio import events
-from cProfile import label
 from re import A
 import re
 import time
-from dis import disco
 from email import header, message
-from pydoc import describe
 import sqlite3
 from ssl import Options
-from turtle import color, title
-from unicodedata import name
 from urllib import response
 import discord
 from discord import player
 from discord.embeds import Embed
 from discord.ext import commands, tasks
-from discord.utils import parse_time
 from dislash import InteractionClient, ActionRow, Button, ButtonStyle, SelectMenu, SelectOption, ContextMenuInteraction, Option, OptionType
 from dislash.interactions.message_components import Component
 import psycopg2
