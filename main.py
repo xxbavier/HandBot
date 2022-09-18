@@ -4,10 +4,12 @@ from re import A
 import re
 import time
 from dis import disco
-from email import message
+from email import header, message
 from pydoc import describe
 import sqlite3
 from ssl import Options
+from turtle import color, title
+from unicodedata import name
 from urllib import response
 import discord
 from discord import player
@@ -33,9 +35,11 @@ with open('config.json') as f:
 token = config.get('token')
 
 bot = commands.Bot(command_prefix=("?"), intents= intents)
-int_bot = InteractionClient(bot, test_guilds=[823037558027321374, 909153380268650516], modify_send= True)
+int_bot = InteractionClient(bot, test_guilds=[909153380268650516, 1020429868762144848], modify_send= True)
 
-status = cycle(['Handball','Xavs Simulator'])
+#
+
+discord_status = cycle(['Handball','Xavs Simulator'])
 
 transactions_enabled = True
 
@@ -53,8 +57,17 @@ demands = {
 
 htl_servers = {
     "League": 909153380268650516,
-    "Media": 928509118208180275
+    "Media": 928509118208180275,
+    "Administration": 1020429868762144848
 }
+
+ro_authurl = "https://auth.roblox.com/v2/logout"
+ro_cookie = "_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_A0CB559D988037F73380E6BF76BCD221F9F6756F40AAB5D94E0333C63B69D7C834E8BFB340FF25C1C6025BD4320CFB362501578F0F8850C6818768A36B0A3BB425C4AF572D188EB5B837553E2AFDF88A1F69ACE83CE7ED6DABF5BF05AA7A697023E3DB4BAF87BD1D992A0A467B019B7AC8FFF4F8747BC97B563A3D8216083C12F514BC5F3271706F019E04EF751BD8941EF5E7DA12DEE75931F6853F3F6B25A18DF3280111E57620E312A20E2FFF51B9E0433C7F94027768BAF5C8283B0F84E72C476957CDF713F65A32BC256142F3DA912CEF7FFDAEB6BDB29A946F555735DD5630A1A7CDAAE0E00C02AEF9A5074455AA9BC7ECAC6BE4DBBC1182C7831D391C7CB9ED097171AACAAF8CDA9E725F89AF70ED10AAF66436CBA195C449A2672750304AD6E4B97C83E667394C05F5F9B1699A30C265E669E70F667AD65FF2F007D858E5D4BB9515BB17FC55F4EF2D1661A99999EFD0010CF0DE642EF689C8175B6F7A60BDE652E513E0FF0A8F7B0CCD78DEA1C19D40"
+def getXsrf():
+    xsrfRequest = requests.post(ro_authurl, cookies={
+        '.ROBLOSECURITY': ro_cookie
+    })
+    return xsrfRequest.headers["x-csrf-token"]
 
 def team_role_check(role):
     htl = bot.get_guild(htl_servers["League"])
@@ -128,7 +141,7 @@ async def on_ready():
 async def change_status():
   #await bot.wait_until_ready()
   #general = bot.get_channel(891224542603800638)
-  await bot.change_presence(activity=discord.Game(next(status)))
+  await bot.change_presence(activity=discord.Game(next(discord_status)))
   #await general.send(content="Who else high af rn")
 
 
@@ -591,6 +604,118 @@ async def release(inter, players= None):
 
 
 @int_bot.slash_command(
+    name= "receive_payment",
+    description= "Request a payment for doing a job in HTL.",
+    options=[
+        Option("username", "What is your Roblox username? This user must be in the HTL roblox group in order to receive funds.", type= OptionType.STRING, required= True),
+        Option("reason", "What job have you done?", type= OptionType.STRING, required= True),
+        Option("amount", "How much robux are you supposed to be paid?", type= OptionType.NUMBER, required= True)
+    ]
+)
+async def payment_receive(inter, username, reason, amount):
+    user = inter.author
+    htlAdmin = bot.get_guild(htl_servers["Administration"])
+    paymentLogging = htlAdmin.get_channel(1020480133984948234)
+
+    amount = int(amount)
+
+    await inter.create_response(
+        embed= discord.Embed(title= "Success", description= "Your payment has been requested. You'll be notified once your request's status changes." ),
+        ephemeral= True
+    )
+
+    embed = discord.Embed(title= "{}#{} has requested a payment.".format(user.name, user.discriminator))
+    embed.add_field(name= "``Reason``", value= reason, inline= False)
+    embed.add_field(name= "``Amount requested``", value= amount, inline= False)
+
+    msg = await paymentLogging.send(
+        embed= embed,
+        components= [
+            ActionRow(
+                Button(label= "Approve", style= ButtonStyle.green, custom_id= "RequestPayment Approved {} {} {} {}".format(username, user.id, amount, reason)),
+                Button(label= "Decline", style= ButtonStyle.red, custom_id= "RequestPayment Declined {} {} {} {}".format(username, user.id, amount, reason))
+            )
+        ],
+    )
+
+@int_bot.event
+async def on_button_click(inter):
+    componentId = inter.component.custom_id
+    componentDetails = componentId.split(" ")
+    
+    label = componentDetails[0]
+    if label == "RequestPayment":
+        status = componentDetails[1]
+        username = componentDetails[2]
+        discordUserId = int(componentDetails[3])
+        amount = int(componentDetails[4])
+        reason = componentDetails[5]
+
+        if status == "Approved":
+            try:
+                result = requests.request('GET', "https://users.roblox.com/v1/users/search?keyword={}&limit=10".format(username))
+                result = result.json()
+                data = result["data"]
+                user = data[0]
+                userId = user["id"]
+                
+                rec = {
+                    "recipientId": userId,
+                    "recipientType": "User",
+                    "amount": amount
+                }
+
+                data = {
+                    "PayoutType": "FixedAmount",
+                    "Recipients": [rec]
+                }
+
+                data = json.dumps(data)
+                print(data)
+                print(type(data))
+
+                payment_attempt = requests.request('POST', 'https://groups.roblox.com/v1/groups/{}/payouts'.format(10195697), data= data, headers={
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": getXsrf()
+                }, cookies= {'.ROBLOSECURITY': ro_cookie})
+
+                embed = discord.Embed(title= "You have been paid!", description= "Your payment status has been changed to {}.".format(status), color= discord.Color.green())
+                embed.add_field(name= "``Roblox Username``", value= username, inline= False)
+                embed.add_field(name= "``Reason``", value= reason, inline= False)
+                embed.add_field(name= "``Amount Requested``", value= amount, inline= False)
+                await bot.get_user(discordUserId).send(embed=embed)
+                
+                embed.title = "{} has been paid.".format(username)
+                embed.add_field(name= "``Response Text``", value= str(payment_attempt.text), inline=False)
+                await bot.get_guild(htl_servers["Administration"]).get_channel(1020847654428749956).send(embed=embed)
+
+            except Exception as e:
+                embed = discord.Embed(title= "I was paying you, but I messed up!", description= "An error occurred while paying.".format(status), color= discord.Color.red())
+                embed.add_field(name= "``Roblox Username``", value= username, inline= False)
+                embed.add_field(name= "``Reason``", value= reason, inline= False)
+                embed.add_field(name= "``Amount Requested``", value= amount, inline= False)
+                embed.add_field(name= "``Error``", value= str(e))
+                await bot.get_user(discordUserId).send(embed=embed)
+                
+                embed.title = "ERROR - {}".format(username)
+                await bot.get_guild(htl_servers["Administration"]).get_channel(1020847654428749956).send(embed=embed)
+        else:
+            embed = discord.Embed(title= "Your payment request has been declined.", description= "Your payment status has been changed to {}.".format(status), color= discord.Color.red())
+            embed.add_field(name= "``Roblox Username``", value= username, inline= False)
+            embed.add_field(name= "``Reason``", value= reason, inline= False)
+            embed.add_field(name= "``Amount Requested``", value= amount, inline= False)
+            await bot.get_user(discordUserId).send(embed=embed)
+            
+            embed.title = "{}'s payment request has been declined.".format(username)
+            await bot.get_guild(htl_servers["Administration"]).get_channel(1020847654428749956).send(embed=embed)
+
+        await inter.message.delete()
+
+
+
+
+
+@int_bot.slash_command(
     description= "Promote players to a coaching position. Must be a Team Owner.",
     options=[
         Option("player", "Please mention (ping) the player you're promoting here.", OptionType.USER, required= True),
@@ -615,6 +740,8 @@ async def promote(inter, player= None, coach= None):
             embed= error("promote", "Attempt to use command on self."),
             ephemeral= True
         )
+
+        return
 
     if coach != 1 and coach != 2:
         embed = error("promote", "Invalid coach level. If you attempted to transfer Team Owner, you must submit a ticket in <#917085749030031390> to request this.")
@@ -705,6 +832,50 @@ async def promote(inter, player= None, coach= None):
         content= "***Check your Direct Messages with {} ({}).***".format(bot.user.mention, bot.user.name),
         ephemeral= True
     )
+
+
+@int_bot.slash_command(
+    description= "Officially schedule a game.",
+    options = [
+        Option("team", "What team are you playing against?", required=True, type= OptionType.ROLE),
+        Option("time", "What time will you be playing?", required=True, type= OptionType.STRING)
+    ]
+)
+async def gametime(inter, targetTeam, time):
+    author = inter.author
+    htl = bot.get_guild(htl_servers["League"])
+
+    coachRank = coachCheck(author, htl)
+
+    if coachRank == 0:
+        embed = error("gametime", "You must be a coach on a valid team to use this command.")
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+        return
+
+    isATeam = team_role_check(targetTeam)
+
+    if not isATeam:
+        embed = error("gametime", "The team you provided is not a valid team.")
+        await inter.create_response(
+            embed= embed,
+            ephemeral= True
+        )
+        return
+
+    embed = discord.Embed()
+    embed.title = "{} vs. {}"
+    embed.description = "{} has posted a gametime.".format(author.name)
+    embed.add_field(name= "``Game Time``", value= time)
+
+    await inter.guild.get_channel(917109847709859920).send(embed= embed)
+
+
+    
+
+    
 
 @int_bot.slash_command(
     description= "Demote players to a coaching position or regular player. Must be a Team Owner.",
@@ -1850,8 +2021,6 @@ async def on_dropdown(inter: int_bot):
             ephemeral = True
         )
 
-
-
 @int_bot.slash_command(description="Provides the stats sheet.")
 async def stats(inter):
     await inter.create_response(
@@ -1859,6 +2028,7 @@ async def stats(inter):
         ephemeral = True
     )
 
+print(len(int_bot.slash_commands))
 
 # Log in
 bot.run(token)
