@@ -625,6 +625,7 @@ async def payment_receive(inter, username, reason, amount):
     )
 
     embed = discord.Embed(title= "{}#{} has requested a payment.".format(user.name, user.discriminator))
+    embed.add_field(name= "``Roblox Username``", value= username, inline=False)
     embed.add_field(name= "``Reason``", value= reason, inline= False)
     embed.add_field(name= "``Amount requested``", value= amount, inline= False)
 
