@@ -1372,8 +1372,8 @@ async def request(inter, gametime):
                 placeholder="Select an option.",
                 max_values=2,
                 options=[
-                    SelectOption(label= "Referee", value= "953293440198787093"),
-                    SelectOption(label= "Streamer", value= "948415747116388362")
+                    SelectOption(label= "Referee", value= "1020917389115793518"),
+                    SelectOption(label= "Streamer", value= "1020916199116263436")
                 ]
             )
         ],
