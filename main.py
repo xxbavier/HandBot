@@ -321,12 +321,12 @@ def get_members_from_string(string, htl):
     return members
 
 
-@int_bot.slash_command(
+'''@int_bot.slash_command(
     description= "Sign player(s) to the team you are roled to. Must be a Assistant Coach+.",
     options=[
         Option("players", "Please mention (ping) all of players you're signing here.", OptionType.STRING, required= True)
     ]
-)
+)'''
 async def sign(inter, players= None):
     if not transactions_enabled:
         embed = error("sign", "Transactions are closed.")
@@ -442,12 +442,12 @@ def get_demands(user, htl):
     
     return dr
 
-@int_bot.slash_command(
+'''@int_bot.slash_command(
     description= "Demand a release from a team.",
     options=[
         Option("reason", "Is there any reason for why you're demanding a release?", OptionType.STRING, required= False)
     ]
-)
+)'''
 async def demand(inter, reason= None):
     if not transactions_enabled:
         embed = error("demand", "Transactions are closed.")
@@ -512,12 +512,12 @@ async def demand(inter, reason= None):
 
 
 
-@int_bot.slash_command(
+'''@int_bot.slash_command(
     description= "Release player(s) from the team you are roled to. Must be a Assistant Coach+.",
     options=[
         Option("players", "Please mention (ping) all of players you're releasing here.", OptionType.STRING, required= True)
     ]
-)
+)'''
 async def release(inter, players= None):
     if not transactions_enabled:
         embed = error("release", "Transactions are closed.")
@@ -710,13 +710,13 @@ async def on_button_click(inter):
 
 
 
-@int_bot.slash_command(
+'''@int_bot.slash_command(
     description= "Promote players to a coaching position. Must be a Team Owner.",
     options=[
         Option("player", "Please mention (ping) the player you're promoting here.", OptionType.USER, required= True),
         Option("coach", "Please state the level of coaching. 1 = Assistant Coach, 2 = Head Coach.", OptionType.INTEGER, required= True)
     ]
-)
+)'''
 async def promote(inter, player= None, coach= None):
     if not transactions_enabled:
         embed = error("promote", "Transactions are closed.")
@@ -872,13 +872,13 @@ async def gametime(inter, targetTeam, time):
 
     
 
-@int_bot.slash_command(
+'''@int_bot.slash_command(
     description= "Demote players to a coaching position or regular player. Must be a Team Owner.",
     options=[
         Option("player", "Please mention (ping) the player you're promoting here.", OptionType.USER, required= True),
         Option("coach", "Please state the level of coaching. 0 = Player, 1 = Assistant Coach.", OptionType.INTEGER, required= True)
     ]
-)
+)'''
 async def demote(inter, player= None, coach= None):
     if not transactions_enabled:
         embed = error("demote", "Transactions are closed.")
