@@ -5,6 +5,7 @@ import time
 from email import header, message
 import sqlite3
 from ssl import Options
+from turtle import color
 from urllib import response
 import discord
 from discord import player
@@ -89,8 +90,8 @@ def coachCheck(user, htl):
     elif htl.get_role(headCoach) in user.roles:
         return 2
 
-    elif htl.get_role(assistantCoach) in user.roles:
-        return 1
+    #elif htl.get_role(assistantCoach) in user.roles:
+    #    return 1
     
     return 0
 
@@ -167,7 +168,24 @@ async def on_message(msg):
 async def on_member_remove(member):
     htl = bot.get_guild(909153380268650516)
 
-    for demand in demands.values():
+    isCoach = coachCheck(member, htl)
+    teamData = teamCheck(member, htl)
+
+    isOnTeam = teamData[0]
+    teamRole = teamData[1]
+
+    if isOnTeam:
+        embed = discord.Embed(title= "A Signed Player Has Left", colour= teamRole.color)
+        embed.add_field(name= "``Player Name``", value= "{}#{}".format(member.name, member.discriminator))
+        embed.add_field(name= "``Team``", value= teamRole.name)
+        
+        if isCoach == 3:
+            await htl.get_channel(1026630998533873784).send(embed= embed)
+        else:
+            await htl.get_channel(1026630956158824499).send(embed= embed)
+            
+
+    '''for demand in demands.values():
         role = htl.get_role(demand)
 
         if role in member.roles:
@@ -179,7 +197,7 @@ async def on_member_remove(member):
 
             await htl.get_channel(943324167154053250).send(embed= embed)
 
-            break
+            break'''
 
 
 events_channel = 900511820643725312      
@@ -415,7 +433,7 @@ async def sign(inter, players= None):
 )
 async def suggest(inter, suggestion= None):
     author = inter.author
-    htl = bot.get_guild(htl_servers["League"])
+    htl_admin = bot.get_guild(htl_servers["Administration"])
 
     await inter.create_response(
         embed = discord.Embed(title= "Your suggestion has been recorded.".format(author.name + "#" + author.discriminator), description= suggestion, colour= discord.Color.green()),
@@ -425,7 +443,7 @@ async def suggest(inter, suggestion= None):
     embed= discord.Embed(title= "Suggestion | {}".format(author.name + "#" + author.discriminator), description= suggestion, colour= discord.Color.blurple())
     embed.set_footer(text= author.name + "#" + author.discriminator, icon_url= author.avatar_url)
 
-    msg = await htl.get_channel(941826291550793838).send(
+    msg = await htl_admin.get_channel(1026631095057399909).send(
         embed= embed
     )
 
@@ -492,7 +510,6 @@ async def demand(inter, reason= None):
 
     await author.remove_roles(
         team_info[1],
-        htl.get_role(917068697334595664), # AC
         htl.get_role(917068674626646027) # HC
     )
 
@@ -561,7 +578,7 @@ async def release(inter, players= None):
             error_players.append(player)
             continue
         
-        await player.remove_roles(team_role, htl.get_role(assistantCoach), htl.get_role(headCoach))
+        await player.remove_roles(team_role, htl.get_role(headCoach))
 
         noti= discord.Embed(title= "You have been released from: {} {}".format(e, team_role.name), description= "", colour= discord.Color.red())
         noti.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
@@ -808,7 +825,7 @@ async def promote(inter, player= None, coach= None):
         embed= noti
     )
 
-    await player.remove_roles(htl.get_role(assistantCoach), htl.get_role(headCoach))
+    await player.remove_roles(htl.get_role(headCoach))
     await player.add_roles(htl.get_role(coachingRole))
 
     embed.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
@@ -962,7 +979,7 @@ async def demote(inter, player= None, coach= None):
         embed= noti
     )
 
-    await player.remove_roles(htl.get_role(assistantCoach), htl.get_role(headCoach))
+    await player.remove_roles(htl.get_role(headCoach))
 
     if coachingRole != 0:
         await player.add_roles(htl.get_role(coachingRole))
@@ -1139,9 +1156,8 @@ async def gametime(inter):
     def check(user):
         to = inter.guild.get_role(917068655928442930)
         hc = inter.guild.get_role(917068674626646027)
-        ac = inter.guild.get_role(917068697334595664)
-
-        if to in user.roles or hc in user.roles or ac in user.roles:
+       
+        if to in user.roles or hc in user.roles in user.roles:
             return True
         else:
             return False
@@ -1972,8 +1988,6 @@ async def on_dropdown(inter: int_bot):
                 embed.add_field(name= "``Team Owner``", value= x.mention + "({})".format(x.name + "#" + x.discriminator))
             elif guild.get_role(917068674626646027) in x.roles:
                 embed.add_field(name= "``Head Coach``", value= x.mention + "({})".format(x.name + "#" + x.discriminator))
-            elif guild.get_role(917068697334595664) in x.roles:
-                embed.add_field(name= "``Assistant Coach``", value= x.mention + "({})".format(x.name + "#" + x.discriminator))
             else:
                 embed.add_field(name= "``Member``", value= x.mention + "({})".format(x.name + "#" + x.discriminator))
 
@@ -2008,9 +2022,7 @@ async def on_dropdown(inter: int_bot):
                 embed.add_field(name= "``Team Owner``", value= x.mention + "({})".format(x.name + "#" + x.discriminator), inline=False)
             elif guild.get_role(917068674626646027) in x.roles:
                 embed.add_field(name= "``Head Coach``", value= x.mention + "({})".format(x.name + "#" + x.discriminator), inline=False)
-            elif guild.get_role(917068697334595664) in x.roles:
-                embed.add_field(name= "``Assistant Coach``", value= x.mention + "({})".format(x.name + "#" + x.discriminator), inline=False)
-
+            
         await inter.create_response(
             embed= embed,
             ephemeral = True
