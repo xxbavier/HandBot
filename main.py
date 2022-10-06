@@ -1987,7 +1987,7 @@ async def on_dropdown(inter: int_bot):
             if guild.get_role(917068655928442930) in x.roles:
                 embed.add_field(name= "``Team Owner``", value= x.mention + "({})".format(x.name + "#" + x.discriminator))
             elif guild.get_role(917068674626646027) in x.roles:
-                embed.add_field(name= "``Head Coach``", value= x.mention + "({})".format(x.name + "#" + x.discriminator))
+                embed.add_field(name= "``General Manager``", value= x.mention + "({})".format(x.name + "#" + x.discriminator))
             else:
                 embed.add_field(name= "``Member``", value= x.mention + "({})".format(x.name + "#" + x.discriminator))
 
