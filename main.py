@@ -5,7 +5,6 @@ import time
 from email import header, message
 import sqlite3
 from ssl import Options
-from turtle import color
 from urllib import response
 import discord
 from discord import player
