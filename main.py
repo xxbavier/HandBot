@@ -411,7 +411,7 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
         error_players = []
 
         for player in players:
-            if teamCheck(player, htl)[0] or len(team_role.members) >= 15 or player.bot:
+            if teamCheck(player, htl)[0] or len(team_role.members) >= 15 or player.bot or not (inter.guild.get_role(910371139803553812) in player.roles):
                 players.remove(player)
                 error_players.append(player)
                 continue
