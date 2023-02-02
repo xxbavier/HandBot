@@ -143,6 +143,23 @@ async def on_ready():
     print("Logged into {} and fully functional with the following commands: {}".format(bot.user.name, commands_list))
 
 @bot.event
+async def on_message(msg):
+  if(msg.channel.id == 917103851092476074):
+    if (msg.content.startswith('<:htl_twitter:951619979252482088>')):
+      if teamCheck(msg.author, msg.guild):
+        await msg.add_reaction('<:htl_verified:951652612120395846>')
+      
+      await msg.add_reaction('❤️')
+      await msg.add_reaction('<:htl_retweet:951620081488642068>')
+      
+    else:
+        try:
+            await msg.delete()
+        except Exception:
+            pass
+  await bot.process_commands(msg)
+
+@bot.event
 async def on_member_update(before: discord.Member, after: discord.Member):
     hasRole = False
 
@@ -266,6 +283,144 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
     async def view(self, inter: discord.interactions.Interaction) -> None:
         pass
 
+    def canPromotePlayer(self, inter: discord.interactions.Interaction):
+        valid = True
+
+        info = teamCheck(inter.user, inter.guild)
+        onTeam = info[0]
+        teamRole = info[1]
+
+        if onTeam:
+            coachCount = 0
+
+            for member in teamRole.members:
+                if inter.guild.get_role(coachRoles["GM"]) in member.roles:
+                    coachCount += 1
+
+            if coachCount >= 2:
+                valid = False
+        
+        return valid
+
+    @app_commands.command(description="Promote a player to General Manager.")
+    @app_commands.checks.has_any_role("Team Owner")
+    async def promote(self, inter: discord.interactions.Interaction, member: discord.Member):
+        author = inter.user
+        htl = inter.guild
+
+        team_info = teamCheck(author, htl)
+
+        valid_team = team_info[0]
+        team_role = team_info[1]
+
+        if not valid_team:
+            raise Exception("You must be a team owner on a valid team to use this command.")
+
+        if not transactions_enabled:
+            raise Exception("Transactions are closed.")
+
+        if author == member:
+            raise Exception("Attempt to use command on self.")
+
+        if teamCheck(member, htl)[1] != team_role:
+            raise Exception("Player must be on the same team as you.")
+
+        if coachCheck(member, htl) >= 2:
+            raise Exception("Player is either already at the requested coaching level or is above it. Use /demote to demote players.")
+            
+        if not self.canPromotePlayer(inter):
+            raise Exception("You already have 2 General Managers.")
+        
+        for e in htl.emojis:
+            if team_role.name.find(e.name) > -1:
+                break
+        
+        embed = transactionEmbed(e, team_role)
+
+        noti= discord.Embed(title= "You are now a General Manager for: {} {}".format(e, team_role.name), description= "", colour= team_role.color)
+        noti.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+
+        await member.send(
+            embed= noti
+        )
+
+        await member.add_roles(htl.get_role(coachRoles["GM"]))
+
+        embed.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+        embed.add_field(name="``Promotion``", value= "{} ({})".format(member.mention, member.name), inline=False)
+
+        await htl.get_channel(transactions_id).send(
+            embed= embed
+        )
+        
+        await author.send(
+            content = "***You have just made a transaction.***",
+            embed= embed
+        )
+
+        await inter.response.send_message(
+            content= "***Check your Direct Messages with {} ({}).***".format(bot.user.mention, bot.user.name),
+            ephemeral= True
+        )
+
+    @app_commands.command(description="Demote a General Manager to player.")
+    @app_commands.checks.has_any_role("Team Owner")
+    async def demote(self, inter: discord.interactions.Interaction, member: discord.Member):
+        author = inter.user
+        htl = inter.guild
+
+        team_info = teamCheck(author, htl)
+
+        valid_team = team_info[0]
+        team_role = team_info[1]
+
+        if not valid_team:
+            raise Exception("You must be a team owner on a valid team to use this command.")
+
+        if not transactions_enabled:
+            raise Exception("Transactions are closed.")
+
+        if author == member:
+            raise Exception("Attempt to use command on self.")
+
+        if teamCheck(member, htl)[1] != team_role:
+            raise Exception("Player must be on the same team as you.")
+
+        if coachCheck(member, htl) != 2:
+            raise Exception("Player is not a General Manager.")
+        
+        for e in htl.emojis:
+            if team_role.name.find(e.name) > -1:
+                break
+        
+        embed = transactionEmbed(e, team_role)
+
+        noti= discord.Embed(title= "You are no longer a General Manager for: {} {}".format(e, team_role.name), description= "", colour= team_role.color)
+        noti.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+
+        await member.send(
+            embed= noti
+        )
+
+        await member.remove_roles(htl.get_role(coachRoles["GM"]))
+
+        embed.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+        embed.add_field(name="``Demotion``", value= "{} ({})".format(member.mention, member.name), inline=False)
+
+        await htl.get_channel(transactions_id).send(
+            embed= embed
+        )
+        
+        await author.send(
+            content = "***You have just made a transaction.***",
+            embed= embed
+        )
+
+        await inter.response.send_message(
+            content= "***Check your Direct Messages with {} ({}).***".format(bot.user.mention, bot.user.name),
+            ephemeral= True
+        )
+
     @app_commands.command(description="Demand a release from your team.")
     @app_commands.check(teamCheckBool)
     async def demand(self, inter: discord.interactions.Interaction, reason: str):
@@ -385,7 +540,6 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
             ephemeral= True
         )
     
-
     @app_commands.command(description="Add players to your team's roster.")
     @app_commands.checks.has_any_role("Team Owner", "General Manager")
     async def sign(self, inter: discord.interactions.Interaction, players: str):
@@ -414,6 +568,7 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
             if teamCheck(player, htl)[0] or len(team_role.members) >= 15 or player.bot or not (inter.guild.get_role(910371139803553812) in player.roles):
                 players.remove(player)
                 error_players.append(player)
+
                 continue
 
             await player.add_roles(team_role)
@@ -452,46 +607,45 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
             ephemeral= True
         )
 
-
-        
-
-    
 tree.add_command(market())
 
-@tree.command()
-async def medals(inter: discord.interactions.Interaction, member: discord.User):
-    embed = discord.Embed(title= "{}'s Awards".format(member.name), color=member.color)
-    embed.description = "Loading..."
-    await inter.response.send_message(embed= embed)
+class medals(app_commands.Group, name= "medals"):
+    @app_commands.command(description="View a player's medals.")
+    async def view(self, inter: discord.interactions.Interaction, member: discord.User):
+        embed = discord.Embed(title= "{}'s Awards".format(member.name), color=member.color)
+        embed.description = "Loading..."
+        await inter.response.send_message(embed= embed)
 
-    data = databases["Player Data"][str(member.id)]
+        data = databases["Player Data"][str(member.id)]
 
-    hb_rings = "No Rings"
-    tournament_rings = "No Rings"
+        hb_rings = "No Rings"
+        tournament_rings = "No Rings"
 
-    for doc in data.find({}):
-        if doc["handbowl_rings"]:
-            if len(doc["handbowl_rings"]) <= 1:
-                hb_rings = ""
+        for doc in data.find({}):
+            if doc["handbowl_rings"]:
+                if len(doc["handbowl_rings"]) <= 1:
+                    hb_rings = ""
 
-                for ring in doc["handbowl_rings"]:
-                    hb_rings += ring + "\n"
+                    for ring in doc["handbowl_rings"]:
+                        hb_rings += ring + "\n"
 
-            
-        elif doc["tournament_rings"]:
-            if len(doc["tournament_rings"]) <= 1:
-                tournament_rings = ""
                 
-                for ring in doc["tournament_rings"]:
-                    tournament_rings += ring + "\n"
+            elif doc["tournament_rings"]:
+                if len(doc["tournament_rings"]) <= 1:
+                    tournament_rings = ""
+                    
+                    for ring in doc["tournament_rings"]:
+                        tournament_rings += ring + "\n"
 
 
-    embed.add_field(name= "``Handbowl Rings``", value=hb_rings, inline=False)
-    embed.add_field(name= "``Tournament Rings``", value=tournament_rings, inline=False)
-    embed.add_field(name= "``Player Awards``", value="WIP", inline=False)
-    embed.description = "Data loaded!"
+        embed.add_field(name= "``Handbowl Rings``", value=hb_rings, inline=False)
+        embed.add_field(name= "``Tournament Rings``", value=tournament_rings, inline=False)
+        embed.add_field(name= "``Player Awards``", value="WIP", inline=False)
+        embed.description = "Data loaded!"
 
-    await inter.edit_original_response(embed=embed)
+        await inter.edit_original_response(embed=embed)
+
+tree.add_command(medals())
 
 @tree.command()
 async def positions(inter: discord.interactions.Interaction):
@@ -504,7 +658,7 @@ async def positions(inter: discord.interactions.Interaction):
     await inter.response.send_message(embed= embed, ephemeral= True)
 
 @tree.command()
-async def submit_scores(inter: discord.interactions.Interaction, week: int):
+async def submit_scores(inter: discord.interactions.Interaction, week: discord.Attachment):
     modal = ReportScores(wk= week)
     
     await inter.response.send_modal(modal)
