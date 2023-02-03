@@ -882,8 +882,7 @@ class Verify(Resource):
 
 
 discordBot = threading.Thread(target=bot.run, kwargs=({'token': token}))
-apiServer = threading.Thread(target=app.run)
-
+apiServer = threading.Thread(target=app.run, kwargs={'host': '0.0.0.0'})
 discordBot.start()
 apiServer.start()
 
