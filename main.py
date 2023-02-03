@@ -6,19 +6,25 @@ import sqlite3
 from ssl import Options
 from urllib import response
 import discord
-from discord import player, app_commands
+from discord import player, app_commands, ui
 from discord.embeds import Embed
 from discord.ext import commands, tasks
 import psycopg2
 import requests
 from typing import List
 import time
+import threading
+import datetime
 
-import keep_alive
 import json
 from itertools import cycle
 import math
 import asyncio
+
+import flask
+from flask import Flask
+import flask_restful
+from flask_restful import Api, Resource, reqparse
 
 import pymongo
 from pymongo.errors import ConnectionFailure
@@ -62,6 +68,10 @@ databases = {
     "Contracts": mongoClient["Contracts"],
     "Demands": mongoClient["Demands"]
 }
+
+
+app = Flask(__name__)
+api = Api(app)
 
 bot = commands.Bot(command_prefix= "?", intents=discord.Intents.all(), application_id= applicationId)
 tree = bot.tree
@@ -609,6 +619,7 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
 
 tree.add_command(market())
 
+@app_commands.guild_only()
 class medals(app_commands.Group, name= "medals"):
     @app_commands.command(description="View a player's medals.")
     async def view(self, inter: discord.interactions.Interaction, member: discord.User):
@@ -647,6 +658,73 @@ class medals(app_commands.Group, name= "medals"):
 
 tree.add_command(medals())
 
+@app_commands.guild_only()
+class moderation(app_commands.Group):
+    @app_commands.command()
+    @app_commands.checks.has_any_role("Founder", "President", "Director", "Executive Board", "Moderation")
+    async def mute(self, inter: discord.interactions.Interaction, member: discord.Member, reason: str, minutes: int = 30, hours: int = 0, days: int = 0, weeks: int = 0):
+        x = datetime.timedelta(
+            minutes= minutes,
+            hours= hours,
+            days= days,
+            weeks= weeks
+        )
+
+        await member.timeout(x)
+
+        embed = discord.Embed(title= "Mute", color= discord.Color.red())
+        embed.set_author(name= "Subject: {} ({})".format(inter.user.name, inter.user.id), icon_url= member.avatar.url)
+        embed.add_field(name= "``Reason``", value= reason)
+        embed.add_field(name= "``Length``", value= str(x))
+        embed.set_footer(text= "Moderator: {} ({})".format(inter.user.name, inter.user.id), icon_url= inter.user.avatar.url)
+
+        await inter.response.send_message(embed= embed)
+        await inter.guild.get_channel(927060372127633458).send(embed= embed)
+    
+    @app_commands.command()
+    @app_commands.checks.has_any_role("Founder", "President", "Director", "Executive Board", "Moderation")
+    async def unmute(self, inter: discord.interactions.Interaction, member: discord.Member, reason: str):
+        if not member.is_timed_out():
+            raise Exception("Member is not muted.")
+
+        await member.timeout(None)
+
+        embed = discord.Embed(title= "Unmute", color= discord.Color.green())
+        embed.set_author(name= "Subject: {} ({})".format(inter.user.name, inter.user.id), icon_url= member.avatar.url)
+        embed.add_field(name= "``Reason``", value= reason)
+        embed.set_footer(text= "Moderator: {} ({})".format(inter.user.name, inter.user.id), icon_url= inter.user.avatar.url)
+
+        await inter.response.send_message(embed= embed)
+        await inter.guild.get_channel(927060372127633458).send(embed= embed)
+
+    @app_commands.command()
+    @app_commands.checks.has_any_role("Founder", "President", "Director")
+    async def kick(self, inter: discord.interactions.Interaction, member: discord.Member, reason: str):
+        await member.kick(reason=reason)
+
+        embed = discord.Embed(title= "Kick", color= discord.Color.red())
+        embed.set_author(name= "Subject: {} ({})".format(inter.user.name, inter.user.id), icon_url= member.avatar.url)
+        embed.add_field(name= "``Reason``", value= reason)
+        embed.set_footer(text= "Moderator: {} ({})".format(inter.user.name, inter.user.id), icon_url= inter.user.avatar.url)
+
+        await inter.response.send_message(embed= embed)
+        await inter.guild.get_channel(927060372127633458).send(embed= embed)
+
+    @app_commands.command()
+    @app_commands.checks.has_any_role("Founder", "President", "Director")
+    async def ban(self, inter: discord.interactions.Interaction, member: discord.Member, reason: str):
+        await member.ban(reason=reason)
+
+        embed = discord.Embed(title= "Ban", color= discord.Color.red())
+        embed.set_author(name= "Subject: {} ({})".format(inter.user.name, inter.user.id), icon_url= member.avatar.url)
+        embed.add_field(name= "``Reason``", value= reason)
+        embed.set_footer(text= "Moderator: {} ({})".format(inter.user.name, inter.user.id), icon_url= inter.user.avatar.url)
+
+        await inter.response.send_message(embed= embed)
+        await inter.guild.get_channel(927060372127633458).send(embed= embed)
+
+tree.add_command(moderation())
+
 @tree.command()
 async def positions(inter: discord.interactions.Interaction):
     embed = discord.Embed(title="Handball Positions", description="This is a list of officially recognized *Handball: The League* positions.", color=discord.Color.purple())
@@ -663,4 +741,151 @@ async def submit_scores(inter: discord.interactions.Interaction, week: discord.A
     
     await inter.response.send_modal(modal)
 
-bot.run(token=token)
+@tree.command()
+async def verify(inter: discord.interactions.Interaction):
+    isPlayerVerified = databases["Player Data"]["Verification"].find_one({
+        'discord': inter.user.name
+    })
+
+    if isPlayerVerified:
+        if isPlayerVerified["confirmed"]:
+            await inter.user.add_roles(910371139803553812)
+            raise Exception("You are already verified!")
+
+    await inter.response.send_message(content="***Check your DMs with {}!***".format(bot.user.mention), ephemeral= True)
+
+    embed = discord.Embed(title= "HTL Verification", description="Welcome to the HTL verification system! Once you finish this, you will have full access to HTL.")
+    embed.add_field(name="``Get Started``", value= "Click \"Start\" below to begin.")
+
+    class stepOne(ui.View):
+        @ui.button(label='Start', style= discord.ButtonStyle.green)
+        async def start(self, interaction: discord.Interaction, button: discord.ui.Button):
+            class modal(ui.Modal, title= "Verification | Step One"):
+                robloxUsername = ui.TextInput(label="What is your Roblox username?")
+
+                async def on_submit(self, interaction: discord.interactions.Interaction):
+                    robloxUsername = self.robloxUsername.value
+                    response = requests.request("GET", 'https://users.roblox.com/v1/users/search?keyword={}&limit=10'.format(robloxUsername), headers={'content-type': 'application/json; charset=utf-8', 'X-Requested-With': 'XMLHttpRequest'})
+                    data = json.loads(response.content)
+                    data = data["data"]
+                    account = data[0]
+
+                    confirm = discord.Embed(title= "Is this you?")
+                    confirm.add_field(name= "``Username``", value= account["name"])
+                    confirm.add_field(name= "``UserId``", value= account["id"])
+                    confirm.set_thumbnail(url= "https://www.roblox.com/headshot-thumbnail/image?userId={}&width=420&height=420&format=png".format(account["id"]))
+
+                    class confirmView(ui.View):
+                        @ui.button(label= "Yes", style=discord.ButtonStyle.green)
+                        async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+                            def checkGroup():
+                                isInGroup = requests.request('GET', "https://groups.roblox.com/v2/users/{}/groups/roles".format(account["id"]), headers={'content-type': 'application/json; charset=utf-8', 'X-Requested-With': 'XMLHttpRequest'})
+                                isInGroup = json.loads(isInGroup.content)
+
+                                for group in isInGroup["data"]:
+                                    if group["group"]["id"] == 10195697:
+                                        return True
+
+                                return False
+
+                            if not checkGroup():
+                                await interaction.response.send_message("*It appears that you are not in the HTL group.\nJoin this group and then try again: {}*".format("https://www.roblox.com/groups/10195697/Handball-The-League#!/about"), ephemeral=True)
+                            else:
+                                await interaction.message.delete()
+                                try:
+                                    databases["Player Data"]["Verification"].update_one({'discord': inter.user.id}, {'$set': {'roblox': account["id"], 'confirmed': False}}, upsert=True)
+                                except:
+                                    await interaction.response.send_message(content="*There was an error during saving your information. Please restart using the ``/verify`` command.")
+                                    return
+                            
+                                await interaction.response.send_message(content="**Your information has been saved, you are almost done!\n\nAll you have to do is join the following game and click \"Verify\"\nhttps://www.roblox.com/games/6732385646/Handball-The-Hub.**")
+                            
+                        @ui.button(label= "No", style= discord.ButtonStyle.red)
+                        async def decline(self, interaction: discord.Interaction, button: discord.ui.Button):
+                            await interaction.response.send_message(content="*Please restart by using the ``/verify`` command.*")
+
+                    await msg.delete()
+                    await interaction.response.send_message(embed= confirm, view= confirmView())
+
+
+            await interaction.response.send_modal(modal())
+
+    msg = await inter.user.send(embed=embed, view=stepOne())
+    
+
+
+@api.resource("/verify")
+class Verify(Resource):
+    def get(self):
+        reqparser = reqparse.RequestParser()
+
+        reqparser.add_argument("platform", required= True)
+        reqparser.add_argument("id", required= True)
+
+        args = reqparser.parse_args()
+
+        data = databases["Player Data"]["Verification"].find_one({
+            args["platform"]: args["id"]
+        })
+
+        if data:
+            ids = {}
+
+            try:
+                ids["discord"] = data["discord"]
+            except:
+                ids["discord"] = None
+            
+            try:
+                ids["roblox"] = data["roblox"]
+            except:
+                ids["roblox"] = None
+
+            try:
+                ids["confirmed"] = data["confirmed"]
+            except:
+                ids["confirmed"] = False
+
+            return {
+                'discord': ids["discord"],
+                'roblox': ids["roblox"],
+                'confirmed': ids["confirmed"]
+            }
+
+        return None
+
+    def post(self):
+        reqparser = reqparse.RequestParser()
+
+        reqparser.add_argument("platform", required= True)
+        reqparser.add_argument("id", required= True)
+
+        args = reqparser.parse_args()
+
+        data = databases["Player Data"]["Verification"].find_one({
+            args["platform"]: args["id"]
+        })
+
+        if data:
+            databases["Player Data"]["Verification"].update_one({'discord': data["discord"], 'roblox': data["roblox"]}, {'$set': {'confirmed': True}})
+
+            member = bot.get_guild(htl_servers["League"]).get_member(data["discord"])
+            embed = discord.Embed(title= member.name, color= discord.Color.green())
+            embed.add_field(name="``Member Mention``", value= member.mention, inline= True)
+            embed.add_field(name="``Member ID``", value= member.id, inline= True)
+
+            asyncio.run(bot.get_guild(htl_servers["League"]).get_channel(1070807124537507850).send(embed=embed))
+
+            return {"Success": "Your account has been confirmed!"}
+
+        return {"Error": "No data found for this user. Begin verification process in HTL."}
+
+
+discordBot = threading.Thread(target=bot.run, kwargs=({'token': token}))
+apiServer = threading.Thread(target=app.run)
+
+discordBot.start()
+apiServer.start()
+
+discordBot.join()
+apiServer.join()
