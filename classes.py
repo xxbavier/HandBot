@@ -6,7 +6,7 @@ class InterestForm(ui.Modal, title= "Player Interest Form"):
     roblox = ui.TextInput(label='Roblox Username', style=discord.TextStyle.short)
     region = ui.TextInput(label='What region are you from?', style=discord.TextStyle.short)
     position = ui.TextInput(label= 'What position(s) do you play?', placeholder= 'Use ``/positions`` for a list of positions.', style=discord.TextStyle.paragraph)
-    
+
 class ReportScores(ui.Modal, title= "Submit Game Scores"):
     def __init__(self, *, title: str = ..., wk: int) -> None:
         super().__init__(title=title)

@@ -143,6 +143,8 @@ def teamCheckBool(inter: discord.interactions.Interaction):
 async def on_ready():
     print("Bot is up! Syncing now...")
 
+    cmds = await bot.get_guild(htl_servers["League"]).integrations()
+
     syncedcommands = await bot.tree.sync()
     await bot.change_presence(status= discord.Status.online, activity= discord.Game("Handball"))
 
@@ -231,6 +233,21 @@ def make_players_string(list_of_players):
         string += "{} ({})\n".format(player.mention, player.name)
     
     return string
+
+async def teams_autocomplete(inter: discord.Integration, current: str) -> List[app_commands.Choice[str]]:
+    teams = []
+
+    for role in inter.guild.roles:
+        if isTeamRole(inter.guild.id, role.id):
+            teams.append([role.name, str(role.id)])
+    
+    choices = []
+
+    for teamList in teams:
+        choices.append(app_commands.Choice(name=teamList[0], value=teamList[1]))
+
+    return choices
+
 
 def get_members_from_string(string, htl):
     members = []
@@ -657,6 +674,71 @@ class medals(app_commands.Group, name= "medals"):
         await inter.edit_original_response(embed=embed)
 
 tree.add_command(medals())
+
+@tree.command()
+@app_commands.autocomplete(team= teams_autocomplete)
+async def roster(inter: discord.Interaction, team: str, coaches: bool = False):
+    team: discord.Role = inter.guild.get_role(int(team))
+
+    for e in inter.guild.emojis:
+        if team.name.find(e.name) > -1:
+            break
+
+    embed = discord.Embed(title= "{} {}".format(e, team.name), color= team.color)
+    embed.set_footer(text= "Team Size: {}".format(len(team.members)))
+
+    for member in team.members:
+        if coachCheck(member, inter.guild) == 3:
+            coachingPos = "``Team Owner``"
+        elif coachCheck(member, inter.guild) == 2:
+            coachingPos = "``General Manager``"
+        else:
+            if coaches:
+                continue
+
+            coachingPos = "``Player``"
+
+        embed.add_field(name= coachingPos, value= "{} ({})".format(member.mention, member.name))
+
+    await inter.response.send_message(embed= embed, ephemeral= True)
+
+        
+
+@app_commands.guild_only()
+class free_agency(app_commands.Group):
+    @app_commands.command()
+    @app_commands.checks.has_role("Membership")
+    async def post(self, inter:discord.interactions.Interaction):
+        if teamCheck(inter.user, bot.get_guild(htl_servers["League"]))[0]:
+            raise Exception("You are already on a team!")
+
+        class FA_Post(ui.Modal, title= "Free Agency Post"):
+            positions = ui.TextInput(label= "What positions do you play?", placeholder="Use \"\positions\" to view a list of official positions.", style=discord.TextStyle.long)
+            pros = ui.TextInput(label= "What are some of your pros?", style=discord.TextStyle.long)
+            cons = ui.TextInput(label= "What are some of your cons?", style= discord.TextStyle.long)
+            extra = ui.TextInput(label= "Anything else you'd like to say?", style=discord.TextStyle.long)
+
+            async def on_submit(self, interaction: discord.Interaction, /) -> None:
+                post = discord.Embed(title=inter.user.name, description="A new free agency post has been made!", color= discord.Color.blurple())
+                post.add_field(name= "``Positions``", value= self.positions.value, inline= False)
+                post.add_field(name= "``Pros``", value= self.pros.value, inline= False)
+                post.add_field(name= "``Cons``", value=self.cons.value, inline= False)
+                post.add_field(name= "``Extra``", value= self.extra.value, inline= False)
+                post.add_field(name= "``Contact``", value= "{} ({})".format(inter.user.mention, inter.user.name))
+
+                await interaction.guild.get_channel(917102894522716230).send(embed= post)
+
+                embed = discord.Embed(
+                    title= "Submitted",
+                    description= "Your free agency post has been successfully posted in <#917102894522716230>.",
+                    color= discord.Color.green()
+                )
+
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        await inter.response.send_modal(FA_Post())
+        
+tree.add_command(free_agency())
 
 @app_commands.guild_only()
 class moderation(app_commands.Group):
