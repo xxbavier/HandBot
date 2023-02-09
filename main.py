@@ -878,7 +878,7 @@ async def submit_scores(inter: discord.interactions.Interaction, week: discord.A
     await inter.response.send_modal(ReportScores())
 
 @tree.command()
-async def apply():
+async def apply(inter: discord.Interaction):
     pass
 
 @tree.command()
