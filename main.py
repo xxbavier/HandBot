@@ -164,7 +164,7 @@ async def on_message(msg: discord.Message):
         global randomMsg
         global msgLength
 
-        word = random.choice(list(msg.content))
+        word = random.choice(msg.content.split(" "))
         randomMsg.append(word)
 
         if len(randomMsg) >= msgLength:
