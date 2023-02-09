@@ -170,8 +170,8 @@ async def on_message(msg: discord.Message):
         if len(randomMsg) >= msgLength:
             message = " ".join(randomMsg)
             message = message.lower().capitalize()
-            await msg.guild.get_channel(917049598059618405).send(content=message)
             randomMsg = []
+            await msg.guild.get_channel(917049598059618405).send(content=message)
             msgLength = random.randint(1,100)
 
     if(msg.channel.id == 917103851092476074):
