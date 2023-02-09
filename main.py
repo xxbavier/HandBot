@@ -15,6 +15,7 @@ from typing import List
 import time
 import threading
 import datetime
+import random
 
 import json
 from itertools import cycle
@@ -154,22 +155,36 @@ async def on_ready():
 
     print("Logged into {} and fully functional with the following commands: {}".format(bot.user.name, commands_list))
 
+msgLength = random.randint(1,100)
+randomMsg = []
+
 @bot.event
-async def on_message(msg):
-  if(msg.channel.id == 917103851092476074):
-    if (msg.content.startswith('<:htl_twitter:951619979252482088>')):
-      if teamCheck(msg.author, msg.guild):
-        await msg.add_reaction('<:htl_verified:951652612120395846>')
+async def on_message(msg: discord.Message):
+    if msg.channel == msg.guild.get_channel(917049598059618405):
+        word = random.choice(list(msg.content))
+        randomMsg.append(word)
+
+        if len(randomMsg) >= msgLength:
+            message = " ".join(randomMsg)
+            message = message.lower().capitalize()
+            await msg.guild.get_channel(917049598059618405).send(content=message)
+            randomMsg = []
+            msgLength = random.randint(1,100)
+
+    if(msg.channel.id == 917103851092476074):
+        if (msg.content.startswith('<:htl_twitter:951619979252482088>')):
+            if teamCheck(msg.author, msg.guild)[1]:
+                await msg.add_reaction('<:htl_verified:951652612120395846>')
       
-      await msg.add_reaction('❤️')
-      await msg.add_reaction('<:htl_retweet:951620081488642068>')
+        await msg.add_reaction('❤️')
+        await msg.add_reaction('<:htl_retweet:951620081488642068>')
       
     else:
         try:
             await msg.delete()
         except Exception:
             pass
-  await bot.process_commands(msg)
+    await bot.process_commands(msg)
 
 @bot.event
 async def on_member_update(before: discord.Member, after: discord.Member):
