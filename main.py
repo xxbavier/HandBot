@@ -174,7 +174,7 @@ async def on_message(msg: discord.Message):
             randomMsg = []
             msgLength = random.randint(1,100)
 
-    if(msg.channel.id == 917103851092476074):
+    '''if(msg.channel.id == 917103851092476074):
         if (msg.content.startswith('<:htl_twitter:951619979252482088>')):
             if teamCheck(msg.author, msg.guild)[1]:
                 await msg.add_reaction('<:htl_verified:951652612120395846>')
@@ -187,7 +187,7 @@ async def on_message(msg: discord.Message):
             await msg.delete()
         except Exception:
             pass
-    await bot.process_commands(msg)
+    await bot.process_commands(msg)'''
 
 @bot.event
 async def on_member_update(before: discord.Member, after: discord.Member):
