@@ -31,7 +31,7 @@ import pymongo
 from pymongo.errors import ConnectionFailure
 from pymongo import InsertOne, DeleteOne, ReplaceOne
 
-from classes import InterestForm, ReportScores
+from classes import InterestForm
 
 coachRoles = {
     'TO': 917068655928442930, # TO
@@ -161,6 +161,9 @@ randomMsg = []
 @bot.event
 async def on_message(msg: discord.Message):
     if msg.channel == msg.guild.get_channel(917049598059618405):
+        global randomMsg
+        global msgLength
+
         word = random.choice(list(msg.content))
         randomMsg.append(word)
 
