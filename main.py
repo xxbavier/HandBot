@@ -160,7 +160,7 @@ randomMsg = []
 
 @bot.event
 async def on_message(msg: discord.Message):
-    if msg.channel == msg.guild.get_channel(917049598059618405):
+    '''if msg.channel == msg.guild.get_channel(917049598059618405):
         global randomMsg
         global msgLength
 
@@ -172,7 +172,7 @@ async def on_message(msg: discord.Message):
             message = message.lower().capitalize()
             randomMsg = []
             await msg.guild.get_channel(917049598059618405).send(content=message)
-            msgLength = random.randint(1,100)
+            msgLength = random.randint(1,100)'''
 
     if(msg.channel.id == 917103851092476074):
         if (msg.content.startswith('<:htl_twitter:951619979252482088>')):
