@@ -787,6 +787,7 @@ class moderation(app_commands.Group):
         embed.set_footer(text= "Moderator: {} ({})".format(inter.user.name, inter.user.id), icon_url= inter.user.avatar.url)
 
         await inter.response.send_message(embed= embed)
+        await member.send(embed= embed)
         await inter.guild.get_channel(927060372127633458).send(embed= embed)
     
     @app_commands.command()
@@ -803,6 +804,7 @@ class moderation(app_commands.Group):
         embed.set_footer(text= "Moderator: {} ({})".format(inter.user.name, inter.user.id), icon_url= inter.user.avatar.url)
 
         await inter.response.send_message(embed= embed)
+        await member.send(embed= embed)
         await inter.guild.get_channel(927060372127633458).send(embed= embed)
 
     @app_commands.command()
@@ -816,6 +818,7 @@ class moderation(app_commands.Group):
         embed.set_footer(text= "Moderator: {} ({})".format(inter.user.name, inter.user.id), icon_url= inter.user.avatar.url)
 
         await inter.response.send_message(embed= embed)
+        await member.send(embed= embed)
         await inter.guild.get_channel(927060372127633458).send(embed= embed)
 
     @app_commands.command()
@@ -829,6 +832,7 @@ class moderation(app_commands.Group):
         embed.set_footer(text= "Moderator: {} ({})".format(inter.user.name, inter.user.id), icon_url= inter.user.avatar.url)
 
         await inter.response.send_message(embed= embed)
+        await member.send(embed= embed)
         await inter.guild.get_channel(927060372127633458).send(embed= embed)
 
 tree.add_command(moderation())
