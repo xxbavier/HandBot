@@ -190,6 +190,14 @@ async def on_message(msg: discord.Message):
         await bot.process_commands(msg)
 
 @bot.event
+async def on_member_join(member: discord.Member):
+    await member.guild.get_channel(1073647165613809715).send(content="<:htlg:1073648808845647912> | **{} has joined the server.** ``Members: {}``".format(member.mention, member.guild.member_count))
+
+@bot.event
+async def on_raw_member_remove(member: discord.Member):
+    await member.guild.get_channel(1073647165613809715).send(content="<:htlr:1073648809873260707> | *{}#{} has left the server.*".format(member.name, member.discriminator))
+
+@bot.event
 async def on_member_update(before: discord.Member, after: discord.Member):
     hasRole = False
 
@@ -836,24 +844,28 @@ async def positions(inter: discord.interactions.Interaction):
     await inter.response.send_message(embed= embed, ephemeral= True)
 
 @tree.command()
-async def submit_scores(inter: discord.interactions.Interaction, week: discord.Attachment):
+@app_commands.checks.has_any_role("Team Owner", "General Manager", "Referees", "Streamers")
+async def game_results(inter: discord.interactions.Interaction, stats_video: str = None, stats_file1: discord.Attachment = None, stats_file2: discord.Attachment = None, stats_file3: discord.Attachment = None, stats_file4: discord.Attachment = None, stats_file5: discord.Attachment = None, stats_file6: discord.Attachment = None, stats_file7: discord.Attachment = None):
+    files = []
+    
     class ReportScores(ui.Modal, title= "Submit Game Scores"):
-        def __init__(self, *, title: str = ..., wk: int) -> None:
-            super().__init__(title=title)
-            self["week"] = wk
-        
+        week = ui.TextInput(label= "What week is this game from?", style= discord.TextStyle.short, placeholder="This MUST be a number.", max_length= 2)
         team_one = ui.TextInput(label= 'Please name Team 1.', style= discord.TextStyle.short)
         team_one_score = ui.TextInput(label= 'What was the score for Team 1?', style= discord.TextStyle.short, placeholder="This MUST be a number.", max_length= 3)
         team_two = ui.TextInput(label= 'Please name Team 2.', style= discord.TextStyle.short)
         team_two_score = ui.TextInput(label= 'What was the score for Team 2?', style= discord.TextStyle.short, placeholder="This MUST be a number.", max_length= 3)
 
         async def on_submit(self, inter: discord.interactions.Interaction):
+            int(self.week.value)
+            int(self.team_one_score.value)
+            int(self.team_two_score.value)
+
             scores = {
                 'team_one': int(self.team_one_score.value),
                 'team_two': int(self.team_two_score.value)
             }
 
-            embed = discord.Embed(title= "WEEK {} | {} vs {}".format(getattr(self, 'week'), self.team_one.value, self.team_two.value))
+            embed = discord.Embed(title= "WEEK {} | {} vs {}".format(self.week.value, self.team_one.value, self.team_two.value))
             embed.add_field(name= "``{} Score``".format(self.team_one.value), value= scores['team_one'], inline=False)
             embed.add_field(name= "``{} Score``".format(self.team_two.value), value= scores['team_two'], inline=False)
 
@@ -883,16 +895,21 @@ async def submit_scores(inter: discord.interactions.Interaction, week: discord.A
             embed.set_footer(text= "Submitted by {}".format(inter.user.name), icon_url=inter.user.avatar.url)
 
             await inter.guild.get_channel(1068918752776818779).send(embed=embed)
+            await inter.guild.get_channel(1073662090113450014).send(content= "``Week {}``\n**> {} vs {}**\n> Stats video: {}".format(self.week.value, self.team_one.value, self.team_two.value, stats_video or "No video provided"), files= files)
 
             embed = discord.Embed(title= "Game Scores Submitted!", description= "Here's a receipt of what you submitted:")
-            embed.add_field(name= "``Week``", value= getattr(self, 'week'), inline=False)
+            embed.add_field(name= "``Week``", value= self.week.value, inline=False)
             embed.add_field(name= "``Team 1 Name``", value= self.team_one.value, inline=False)
             embed.add_field(name= "``Team 1 Score``", value= self.team_one_score.value, inline=False)
             embed.add_field(name= "``Team 2 Name``", value= self.team_two.value, inline=False)
             embed.add_field(name= "``Team 2 Score``", value= self.team_two_score.value, inline=False)
 
             await inter.response.send_message(embed= embed, ephemeral=True)
-    
+
+    for file in [stats_file1, stats_file2, stats_file3, stats_file4, stats_file5, stats_file6, stats_file7]:
+        if file:
+            files.append(await file.to_file())
+
     await inter.response.send_modal(ReportScores())
 
 @tree.command()
