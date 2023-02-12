@@ -17,6 +17,8 @@ import threading
 import datetime
 import random
 
+import roblox
+
 import json
 from itertools import cycle
 import math
@@ -57,6 +59,7 @@ with open("config.json", "r") as file:
 
 
 # Initiate
+roClient = roblox.Client()
 mongoClient = pymongo.MongoClient(mongoLogIn)
 
 try:
@@ -194,8 +197,8 @@ async def on_member_join(member: discord.Member):
     await member.guild.get_channel(1073647165613809715).send(content="<:htlg:1073648808845647912> | **{} has joined the server.** ``Members: {}``".format(member.mention, member.guild.member_count))
 
 @bot.event
-async def on_raw_member_remove(member: discord.Member):
-    await member.guild.get_channel(1073647165613809715).send(content="<:htlr:1073648809873260707> | *{}#{} has left the server.*".format(member.name, member.discriminator))
+async def on_raw_member_remove(member: discord.RawMemberRemoveEvent):
+    await member.guild.get_channel(1073647165613809715).send(content="<:htlr:1073648809873260707> | *{}#{} has left the server.*".format(member.user.name, member.user.discriminator))
 
 @bot.event
 async def on_member_update(before: discord.Member, after: discord.Member):
@@ -920,7 +923,7 @@ async def game_results(inter: discord.interactions.Interaction, stats_video: str
 async def apply(inter: discord.Interaction):
     pass
 
-@tree.command()
+#@tree.command()
 async def verify(inter: discord.interactions.Interaction):
     isPlayerVerified = databases["Player Data"]["Verification"].find_one({
         'discord': inter.user.name
@@ -944,15 +947,26 @@ async def verify(inter: discord.interactions.Interaction):
 
                 async def on_submit(self, interaction: discord.interactions.Interaction):
                     robloxUsername = self.robloxUsername.value
-                    response = requests.request("GET", 'https://users.roblox.com/v1/users/search?keyword={}&limit=10'.format(robloxUsername), headers={'content-type': 'application/json; charset=utf-8', 'X-Requested-With': 'XMLHttpRequest'})
-                    data = json.loads(response.content)
-                    data = data["data"]
-                    account = data[0]
+                    
+                    try:
+                        user: roblox.BaseUser = await roClient.get_user_by_username(robloxUsername)
+                    except roblox.UserNotFound:
+                        await interaction.response.send_message(content="*User was not found. Please restart using the ``/verify`` command.*")
+                        await interaction.message.delete()
+                        return
 
                     confirm = discord.Embed(title= "Is this you?")
-                    confirm.add_field(name= "``Username``", value= account["name"])
-                    confirm.add_field(name= "``UserId``", value= account["id"])
-                    confirm.set_thumbnail(url= "https://www.roblox.com/headshot-thumbnail/image?userId={}&width=420&height=420&format=png".format(account["id"]))
+                    confirm.add_field(name= "``Username``", value= user.name)
+                    confirm.add_field(name= "``UserId``", value= user.id)
+
+                    thumbnails = await roClient.thumbnails.get_user_avatar_thumbnails(
+                        users= [user],
+                        type= roblox.thumbnails.AvatarThumbnailType.headshot,
+                        size= (100,100)
+                    )
+
+                    if len(thumbnails) > 0:
+                        confirm.set_thumbnail(url= thumbnails[0].image_url)
 
                     class confirmView(ui.View):
                         @ui.button(label= "Yes", style=discord.ButtonStyle.green)
@@ -960,6 +974,8 @@ async def verify(inter: discord.interactions.Interaction):
                             def checkGroup():
                                 isInGroup = requests.request('GET', "https://groups.roblox.com/v2/users/{}/groups/roles".format(account["id"]), headers={'content-type': 'application/json; charset=utf-8', 'X-Requested-With': 'XMLHttpRequest'})
                                 isInGroup = json.loads(isInGroup.content)
+
+
 
                                 for group in isInGroup["data"]:
                                     if group["group"]["id"] == 10195697:
@@ -1062,6 +1078,7 @@ class Verify(Resource):
 
 discordBot = threading.Thread(target=bot.run, kwargs=({'token': token}))
 apiServer = threading.Thread(target=app.run, kwargs={'host': '0.0.0.0'})
+
 discordBot.start()
 apiServer.start()
 
