@@ -773,16 +773,25 @@ tree.add_command(free_agency())
 class moderation(app_commands.Group):
     @app_commands.command()
     @app_commands.checks.has_any_role("Founder", "President", "Director", "Executive Board", "Moderation")
-    async def purge(self, inter: discord.Interaction, messages: int, member: discord.Member = None):
-        messages = min(messages, 100)
+    async def purge(self, inter: discord.Interaction, count: int, member: discord.Member = None):
+        count = min(count, 100)
         
         if member:
             def check(msg):
                 return msg.author == member
 
-            await inter.channel.purge(limit=messages, check=check)
+            msgs = await inter.channel.purge(limit=count, check=check)
         else:
-            await inter.channel.purge(limit=messages)
+            msgs = await inter.channel.purge(limit=count)
+
+        embed = discord.Embed(title= "Purged Channel", color= discord.Color.red())
+        embed.add_field("``# of Messages Deleted``", value= str(len(msgs)))
+        embed.set_footer(icon_url=inter.user.avatar.url, text= "{} ({})".format(inter.user.name, inter.user.id))
+
+        await inter.response.send_message(embed=embed, delete_after=2)
+        embed.add_field("``Channel``", value= f"<#{inter.channel.id}>")
+
+        await inter.guild.get_channel(927060372127633458).send(embed= embed)
 
 
     @app_commands.command()
