@@ -773,7 +773,24 @@ tree.add_command(free_agency())
 class moderation(app_commands.Group):
     @app_commands.command()
     @app_commands.checks.has_any_role("Founder", "President", "Director", "Executive Board", "Moderation")
+    async def purge(self, inter: discord.Interaction, messages: int, member: discord.Member = None):
+        messages = min(messages, 100)
+        
+        if member:
+            def check(msg):
+                return msg.author == member
+
+            await inter.channel.purge(limit=messages, check=check)
+        else:
+            await inter.channel.purge(limit=messages)
+
+
+    @app_commands.command()
+    @app_commands.checks.has_any_role("Founder", "President", "Director", "Executive Board", "Moderation")
     async def mute(self, inter: discord.interactions.Interaction, member: discord.Member, reason: str, minutes: int = 30, hours: int = 0, days: int = 0, weeks: int = 0):
+        if inter.user.top_role.position <= member.top_role.position:
+            raise Exception("The member you tried muting has a higher role than you.")
+
         x = datetime.timedelta(
             minutes= minutes,
             hours= hours,
@@ -796,6 +813,9 @@ class moderation(app_commands.Group):
     @app_commands.command()
     @app_commands.checks.has_any_role("Founder", "President", "Director", "Executive Board", "Moderation")
     async def unmute(self, inter: discord.interactions.Interaction, member: discord.Member, reason: str):
+        if inter.user.top_role.position <= member.top_role.position:
+            raise Exception("The member you tried unmuting has a higher role than you.")
+
         if not member.is_timed_out():
             raise Exception("Member is not muted.")
 
@@ -813,6 +833,9 @@ class moderation(app_commands.Group):
     @app_commands.command()
     @app_commands.checks.has_any_role("Founder", "President", "Director")
     async def kick(self, inter: discord.interactions.Interaction, member: discord.Member, reason: str):
+        if inter.user.top_role.position <= member.top_role.position:
+            raise Exception("The member you tried kicking has a higher role than you.")
+
         await member.kick(reason=reason)
 
         embed = discord.Embed(title= "Kick", color= discord.Color.red())
@@ -827,6 +850,9 @@ class moderation(app_commands.Group):
     @app_commands.command()
     @app_commands.checks.has_any_role("Founder", "President", "Director")
     async def ban(self, inter: discord.interactions.Interaction, member: discord.Member, reason: str):
+        if inter.user.top_role.position <= member.top_role.position:
+            raise Exception("The member you tried banning has a higher role than you.")
+            
         await member.ban(reason=reason)
 
         embed = discord.Embed(title= "Ban", color= discord.Color.red())
