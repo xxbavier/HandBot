@@ -770,6 +770,23 @@ class free_agency(app_commands.Group):
 tree.add_command(free_agency())
 
 @app_commands.guild_only()
+class teams(app_commands.Group):
+    @app_commands.command()
+    @app_commands.checks.has_any_role("Founder", "President")
+    @app_commands.autocomplete(team= teams_autocomplete)
+    async def disband(self, inter: discord.Interaction, team= str):
+        team: discord.Role = inter.guild.get_role(int(team))
+
+        for member in team.members:
+            await member.remove_roles(member, inter.guild.get_role(coachRoles["TO"]), inter.guild.get_role(coachRoles["GM"]))
+
+        embed = discord.Embed(title= "Disbanded Team", color= team.color)
+        embed.add_field("``Team``", value= team.name)
+
+        await inter.response.send_message(embed= embed)
+
+
+@app_commands.guild_only()
 class moderation(app_commands.Group):
     @app_commands.command()
     @app_commands.checks.has_any_role("Founder", "President", "Director", "Executive Board", "Moderation")
