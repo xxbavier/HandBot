@@ -981,7 +981,7 @@ async def game_results(inter: discord.interactions.Interaction, stats_video: str
 async def apply(inter: discord.Interaction):
     pass
 
-#@tree.command()
+@tree.command()
 async def verify(inter: discord.interactions.Interaction):
     isPlayerVerified = databases["Player Data"]["Verification"].find_one({
         'discord': inter.user.name
@@ -1029,29 +1029,32 @@ async def verify(inter: discord.interactions.Interaction):
                     class confirmView(ui.View):
                         @ui.button(label= "Yes", style=discord.ButtonStyle.green)
                         async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-                            def checkGroup():
-                                isInGroup = requests.request('GET', "https://groups.roblox.com/v2/users/{}/groups/roles".format(account["id"]), headers={'content-type': 'application/json; charset=utf-8', 'X-Requested-With': 'XMLHttpRequest'})
-                                isInGroup = json.loads(isInGroup.content)
+                            async def checkGroup():
+                                group = await roClient.get_group(10195697)
+                                members = await group.get_members().flatten()
+                                
+                                inGroup = False
 
+                                for member in members:
+                                    if member.id == user.id:
+                                        inGroup = True
+                                        break
 
+                                return inGroup
 
-                                for group in isInGroup["data"]:
-                                    if group["group"]["id"] == 10195697:
-                                        return True
-
-                                return False
-
-                            if not checkGroup():
-                                await interaction.response.send_message("*It appears that you are not in the HTL group.\nJoin this group and then try again: {}*".format("https://www.roblox.com/groups/10195697/Handball-The-League#!/about"), ephemeral=True)
+                            await interaction.message.delete()
+                            await interaction.response.send_message("*I am checking if your account is in the HTL Roblox group...*")
+                            if not await checkGroup():
+                                await interaction.user.send("*It appears that you are not in the HTL group.\nJoin this group and then try again: {}*".format("https://www.roblox.com/groups/10195697/Handball-The-League#!/about"))
                             else:
-                                await interaction.message.delete()
                                 try:
-                                    databases["Player Data"]["Verification"].update_one({'discord': inter.user.id}, {'$set': {'roblox': account["id"], 'confirmed': False}}, upsert=True)
+                                    databases["Player Data"]["Verification"].update_one({'discord': inter.user.id}, {'$set': {'roblox': user.id, 'confirmed': False}}, upsert=True)
                                 except:
-                                    await interaction.response.send_message(content="*There was an error during saving your information. Please restart using the ``/verify`` command.")
+                                    await interaction.user.send(content="*There was an error during saving your information. Please restart using the ``/verify`` command.")
                                     return
-                            
-                                await interaction.response.send_message(content="**Your information has been saved, you are almost done!\n\nAll you have to do is join the following game and click \"Verify\"\nhttps://www.roblox.com/games/6732385646/Handball-The-Hub.**")
+                                    
+                                await interaction.delete_original_response()
+                                await interaction.user.send(content="**Your information has been saved, you are almost done!\n\nAll you have to do is join the following game and click \"Verify\"\nhttps://www.roblox.com/games/6732385646/Handball-The-Hub.**")
                             
                         @ui.button(label= "No", style= discord.ButtonStyle.red)
                         async def decline(self, interaction: discord.Interaction, button: discord.ui.Button):
