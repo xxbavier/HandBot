@@ -198,7 +198,7 @@ async def on_member_join(member: discord.Member):
 
 @bot.event
 async def on_raw_member_remove(member: discord.RawMemberRemoveEvent):
-    await member.guild.get_channel(1073647165613809715).send(content="<:htlr:1073648809873260707> | *{}#{} has left the server.*".format(member.user.name, member.user.discriminator))
+    await bot.get_guild(member.guild_id).get_channel(1073647165613809715).send(content="<:htlr:1073648809873260707> | *{}#{} has left the server.*".format(member.user.name, member.user.discriminator))
 
 @bot.event
 async def on_member_update(before: discord.Member, after: discord.Member):
