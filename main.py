@@ -33,7 +33,7 @@ import pymongo
 from pymongo.errors import ConnectionFailure
 from pymongo import InsertOne, DeleteOne, ReplaceOne
 
-from classes import InterestForm
+from classes import InterestForm, FA_Post
 
 coachRoles = {
     'TO': 917068655928442930, # TO
@@ -232,6 +232,107 @@ async def on_member_update(before: discord.Member, after: discord.Member):
                 await after.remove_roles(*roles_to_remove, reason= "User is no longer boosting; therefore, I am taking away the color roles.")
             except Exception as e:
                 print("Failed to remove color from "+ after.name)
+
+@bot.event
+async def on_interaction(inter: discord.Interaction):
+    data = inter.data
+
+    try:
+        id = data["custom_id"]
+        values = data["values"]
+    except Exception:
+        return
+
+    if id == "Information":
+        embed = discord.Embed(title= values[0])
+        view = None
+
+        if values[0] == "Introduction":
+            embed.description = "*Welcome to the biggest Handball league on the Roblox platform, Handball: The League. HTL is a NA-based league that was established in March of 2021.*\n\n**This channel is where you can find information about the league.**"
+        elif values[0] == "Getting Started":
+            embed.description = "*Upon joining the league, there are a few ways for new players to involve themselves in the league.*"
+
+            class gettingStarted(ui.View):
+                @ui.select(options=[
+                    discord.SelectOption(label= "Tournaments", emoji="🏆", value = "Tournaments"),
+                    discord.SelectOption(label= "Pickups", emoji="🥅", value = "Pickups"),
+                    discord.SelectOption(label= "Free Agency", emoji="🔰", value = "Free Agency"),
+                    discord.SelectOption(label= "Chat", emoji="💬", value = "Chat"),
+                ], placeholder= "Find ways to get started.", custom_id= "Getting Started")
+                async def callback():
+                    pass
+
+            view = gettingStarted()
+                
+        elif values[0] == "League Invite":
+            invite = await inter.channel.create_invite(
+                reason= "Information channel",
+                max_age=0,
+                max_uses=0,
+                unique=False
+            )
+
+            embed.add_field(name= "``Permanent``", value= invite.url, inline= False)
+            
+            vanity = inter.guild.vanity_url
+
+            if not vanity:
+                vanity = "HTL does not have a vanity invite at the moment."
+
+            embed.add_field(name= "Vanity", value= vanity, inline= False)
+
+        elif values[0] == "Game":
+            embed.description = "Click the buttons to access the Roblox sites."
+
+            view = ui.View()
+
+            game = ui.Button(label= "Game Page", url= "https://www.roblox.com/games/5498056786/Handball-Association", style= discord.ButtonStyle.gray)
+            group = ui.Button(label= "League Group Page", url= "https://www.roblox.com/groups/10195697/Handball-The-League", style= discord.ButtonStyle.red)
+
+            view.add_item(game)
+            view.add_item(group)
+
+        elif values[0] == "Rulebook":
+            embed.description = "Click the buttont to access the HTL Rulebook."
+
+            view = ui.View()
+            
+            rulebook = ui.Button(label= "Rulebook", url= "https://docs.google.com/document/d/1NK3pw-e5EojJOTNzIQCjkG5hY5P6YbircnLlQH6Rc5A/edit?usp=sharing")
+
+            view.add_item(rulebook)
+
+        elif values[0] == "Roles":
+            embed.description = "*This module is not yet finished. You subscribe to roles in <#944094182631407636> for now.*"
+        
+        elif values[0] == "Applications":
+            embed.description = "*This module is not yet finished.*"
+
+            #@ui.select()
+        
+        await inter.response.send_message(embed= embed, ephemeral= True, view= view)
+
+    elif id == "Getting Started":
+        embed = discord.Embed(title = values[0])
+        view = None
+
+        if values[0] == "Tournaments":
+            embed.description = "**Every week or two, we host tournaments that are fully randomized (random bracket and random teams).**\n\n> *In tournaments, you are guarenteed playtime and will be competing for a Robux prize.*\n\n__Tournaments Channel:__ <#1054697507332046849>"
+        elif values[0] == "Pickups":
+            embed.description = "**Pickup games are mock games ran by the community.**\n\n> *Pickups are a great way to get yourself involved in HTL and to get others to notice your skill.*"
+        elif values[0] == "Free Agency":
+            embed.description = "**Teams are often looking for new players for their rosters and like to scout new players.**\n\n> *You can get noticed by posting a Free Agency advertisement using the Handbot or by responding to posts made by Team Coaches in the scouting channel.*"
+
+            class freeAgencyView(ui.View):
+                @ui.button(label= "Post Free Agent Ad", style= discord.ButtonStyle.blurple)
+                async def callback(self, inter: discord.Interaction, extra):
+                    await inter.response.send_modal(FA_Post())
+
+            view = freeAgencyView()
+
+        elif values[0] == "Chat":
+            embed.description = "**Talking to other members in the league and forming connections is a good way to get involved in the league.**\n\n> *Some teams tend to tryout/recruit members that are active in the community; in addition, forming connections is a good way to form a team if a member is interested in owning a team.*"
+
+        await inter.response.send_message(embed= embed, ephemeral= True, view=view)
 
 @tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
@@ -741,30 +842,6 @@ class free_agency(app_commands.Group):
         if teamCheck(inter.user, bot.get_guild(htl_servers["League"]))[0]:
             raise Exception("You are already on a team!")
 
-        class FA_Post(ui.Modal, title= "Free Agency Post"):
-            positions = ui.TextInput(label= "What positions do you play?", placeholder="Use \"\positions\" to view a list of official positions.", style=discord.TextStyle.long)
-            pros = ui.TextInput(label= "What are some of your pros?", style=discord.TextStyle.long)
-            cons = ui.TextInput(label= "What are some of your cons?", style= discord.TextStyle.long)
-            extra = ui.TextInput(label= "Anything else you'd like to say?", style=discord.TextStyle.long)
-
-            async def on_submit(self, interaction: discord.Interaction, /) -> None:
-                post = discord.Embed(title=inter.user.name, description="A new free agency post has been made!", color= discord.Color.blurple())
-                post.add_field(name= "``Positions``", value= self.positions.value, inline= False)
-                post.add_field(name= "``Pros``", value= self.pros.value, inline= False)
-                post.add_field(name= "``Cons``", value=self.cons.value, inline= False)
-                post.add_field(name= "``Extra``", value= self.extra.value, inline= False)
-                post.add_field(name= "``Contact``", value= "{} ({})".format(inter.user.mention, inter.user.name))
-
-                await interaction.guild.get_channel(917102894522716230).send(embed= post)
-
-                embed = discord.Embed(
-                    title= "Submitted",
-                    description= "Your free agency post has been successfully posted in <#917102894522716230>.",
-                    color= discord.Color.green()
-                )
-
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-
         await inter.response.send_modal(FA_Post())
         
 tree.add_command(free_agency())
@@ -1048,7 +1125,7 @@ async def verify(inter: discord.interactions.Interaction):
                                 await interaction.user.send("*It appears that you are not in the HTL group.\nJoin this group and then try again: {}*".format("https://www.roblox.com/groups/10195697/Handball-The-League#!/about"))
                             else:
                                 try:
-                                    databases["Player Data"]["Verification"].update_one({'discord': inter.user.id}, {'$set': {'roblox': user.id, 'confirmed': False}}, upsert=True)
+                                    databases["Player Data"]["Verification"].update_one({'discord': inter.user.id}, {'$set': {'roblox': user.id, 'confirmed': False, 'discord_username': inter.user.name}}, upsert=True)
                                 except:
                                     await interaction.user.send(content="*There was an error during saving your information. Please restart using the ``/verify`` command.")
                                     return
@@ -1067,8 +1144,32 @@ async def verify(inter: discord.interactions.Interaction):
             await interaction.response.send_modal(modal())
 
     msg = await inter.user.send(embed=embed, view=stepOne())
-    
 
+@app_commands.guild_only()
+class admin(app_commands.Group):
+    @app_commands.command()
+    @app_commands.checks.has_any_role("Founder", "President")
+    async def information(self, inter: discord.Interaction):
+        embed = discord.Embed(title= "Handball: The League", description= "Welcome to *Handball: The League!*")
+        embed.set_thumbnail(url="https://media.discordapp.net/attachments/914661528593125387/1072928961329369158/htl.png?width=818&height=894")
+
+        class informationView(ui.View):
+            @ui.select(options=[
+                discord.SelectOption(label= "Introduction", emoji= "👋", value= "Introduction"),
+                discord.SelectOption(label= "Getting Started", emoji= "🔰", value= "Getting Started"),
+                discord.SelectOption(label= "League Invite", emoji= "🌐", value= "League Invite"),
+                discord.SelectOption(label= "Game", emoji= "🕹️", value= "Game"),
+                discord.SelectOption(label= "Rulebook", emoji= "📜", value= "Rulebook"),
+                discord.SelectOption(label= "Roles", emoji= "📒", value= "Roles"),
+                discord.SelectOption(label= "Apply", emoji= "💎", value= "Applications"),
+            ], custom_id= "Information", placeholder= "Select module you'd like to read.")
+            async def callback():
+                pass
+        
+        await inter.guild.get_channel(914661528593125387).send(embed= embed, view= informationView())
+        await inter.response.send_message(content="*The information embed has been sent.*")
+
+tree.add_command(admin())
 
 @api.resource("/verify")
 class Verify(Resource):
