@@ -36,8 +36,6 @@ from pymongo import InsertOne, DeleteOne, ReplaceOne
 
 from classes import InterestForm, FA_Post
 
-from boto.s3.connection import S3Connection
-
 try:
     token = os.environ['BOT_TOKEN']
     mongoLogIn = os.environ["MONGO_ACCESS"]
