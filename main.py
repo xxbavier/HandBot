@@ -45,7 +45,6 @@ except KeyError:
         token = data["token"]
         mongoLogIn = data["db_connection"]
 
-print("test")
 coachRoles = {
     'TO': 917068655928442930, # TO
     'GM': 917068674626646027, # GM
