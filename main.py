@@ -1,5 +1,6 @@
 from asyncio import events
 import re
+import os
 import time
 from email import header, message
 import sqlite3
@@ -35,6 +36,18 @@ from pymongo import InsertOne, DeleteOne, ReplaceOne
 
 from classes import InterestForm, FA_Post
 
+from boto.s3.connection import S3Connection
+
+try:
+    token = os.environ['BOT_TOKEN']
+    mongoLogIn = os.environ["MONGO_ACCESS"]
+except KeyError:
+    with open(".gitignore/config.json", "r") as file:
+        data = json.load(file)
+        token = data["token"]
+        mongoLogIn = data["db_connection"]
+
+
 coachRoles = {
     'TO': 917068655928442930, # TO
     'GM': 917068674626646027, # GM
@@ -50,12 +63,6 @@ transactions_enabled = True
 
 token: str
 mongoLogIn: str
-
-with open("config.json", "r") as file:
-    data = json.load(file)
-    token = data["token"]
-    mongoLogIn = data["db_connection"]
-    applicationId = data["application_id"]
 
 
 # Initiate
@@ -77,7 +84,7 @@ databases = {
 app = Flask(__name__)
 api = Api(app)
 
-bot = commands.Bot(command_prefix= "?", intents=discord.Intents.all(), application_id= applicationId)
+bot = commands.Bot(command_prefix= "?", intents=discord.Intents.all(), application_id= 885266060796899329)
 tree = bot.tree
 
 def coachCheck(user, htl):
