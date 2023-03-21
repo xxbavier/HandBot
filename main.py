@@ -39,6 +39,8 @@ from classes import InterestForm, FA_Post
 try:
     token = os.environ['BOT_TOKEN']
     mongoLogIn = os.environ["MONGO_ACCESS"]
+
+    print(token)
 except KeyError:
     with open(".gitignore/config.json", "r") as file:
         data = json.load(file)
