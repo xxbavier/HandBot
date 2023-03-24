@@ -147,6 +147,29 @@ def teamCheckBool(inter: discord.interactions.Interaction):
     return onTeam
 
 
+def get_roles(member: discord.Member, adding_roles: bool):
+    roles = [
+        ["🤾", "Pickup Pings", 917051613196193812],
+        ["🎮", "Event Pings", 917051775754829874],
+        ["📺", "Stream Pings", 1088688412850135112],
+        ["🚫", "Mute Partnerships", 917051682343501884],
+        ["🔰", "Team Owner Interest", 944096262779719681]
+    ]
+
+    approved_role_choices = []
+
+    for role in roles:
+        role_obj = member.guild.get_role(role[2])
+
+        if role_obj and ((role_obj in member.roles) != adding_roles):
+            option = discord.SelectOption(label= role[1], value= role[2], emoji= role[0])
+
+            approved_role_choices.append(option)
+
+    return approved_role_choices
+
+    
+
 @bot.event
 async def on_ready():
     print("Bot is up! Syncing now...")
@@ -243,7 +266,9 @@ async def on_interaction(inter: discord.Interaction):
 
     try:
         id = data["custom_id"]
-        values = data["values"]
+        
+        if data["component_type"] != 2:
+            values = data["values"]
     except Exception:
         return
 
@@ -306,7 +331,15 @@ async def on_interaction(inter: discord.Interaction):
             view.add_item(rulebook)
 
         elif values[0] == "Roles":
-            embed.description = "*This module is not yet finished. You subscribe to roles in <#944094182631407636> for now.*"
+            #embed.description = "*This module is not yet finished. You subscribe to roles in <#944094182631407636> for now.*"
+
+            view = ui.View()
+
+            add_roles = ui.Button(custom_id= "Add Roles", label= "Add Roles", style= discord.ButtonStyle.green)
+            remove_roles = ui.Button(custom_id= "Remove Roles", label= "Remove Roles", style= discord.ButtonStyle.red)
+
+            view.add_item(add_roles)
+            view.add_item(remove_roles)
         
         elif values[0] == "Applications":
             embed.description = "*This module is not yet finished.*"
@@ -337,6 +370,61 @@ async def on_interaction(inter: discord.Interaction):
             embed.description = "**Talking to other members in the league and forming connections is a good way to get involved in the league.**\n\n> *Some teams tend to tryout/recruit members that are active in the community; in addition, forming connections is a good way to form a team if a member is interested in owning a team.*"
 
         await inter.response.send_message(embed= embed, ephemeral= True, view=view)
+    
+    elif id == "Delete Pickup":
+        pass
+
+    elif id == "Add Roles":
+        roles = get_roles(inter.user, True)
+        embed = discord.Embed(title= "Select roles you'd like to add.")
+        
+        class rolesView(ui.View):
+            @ui.select(options= roles, placeholder= "Select roles you'd like to add.", max_values= len(roles))
+            async def callback(self, roles_inter: discord.Interaction, selectMenu: discord.SelectMenu):
+                roles_to_add = []
+
+                for role in roles_inter.data["values"]:
+                    role = inter.guild.get_role(int(role))
+                    roles_to_add.append(role)
+
+                await inter.delete_original_response()
+                await inter.user.add_roles(*roles_to_add, reason= "Information channel - ADD")
+                await roles_inter.response.send_message(content= "*Roles have been added.*", ephemeral= True)
+
+        view = None
+
+        if len(roles) == 0:
+            embed.title = "You have all of the roles!"
+        else:
+            view = rolesView()
+
+        await inter.response.send_message(embed= embed, view= view, ephemeral= True)
+    
+    elif id == "Remove Roles":
+        roles = get_roles(inter.user, False)
+        embed = discord.Embed(title= "Select roles you'd like to remove.")
+        
+        class rolesView(ui.View):
+            @ui.select(options= roles, placeholder= "Select roles you'd like to remove.", max_values= len(roles))
+            async def callback(self, roles_inter: discord.Interaction, selectMenu: discord.SelectMenu):
+                roles_to_remove = []
+
+                for role in roles_inter.data["values"]:
+                    role = inter.guild.get_role(int(role))
+                    roles_to_remove.append(role)
+
+                await inter.delete_original_response()
+                await inter.user.remove_roles(*roles_to_remove, reason= "Information channel - REMOVE")
+                await roles_inter.response.send_message(content= "*Roles have been removed.*", ephemeral= True)
+
+        view = None
+
+        if len(roles) == 0:
+            embed.title = "You do not have any roles!"
+        else:
+            view = rolesView()
+
+        await inter.response.send_message(embed= embed, view= view, ephemeral= True)
 
 @tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
@@ -1174,6 +1262,47 @@ class admin(app_commands.Group):
         await inter.response.send_message(content="*The information embed has been sent.*")
 
 tree.add_command(admin())
+
+@app_commands.guild_only()
+class events(app_commands.Group):
+    @app_commands.command()
+    @app_commands.checks.has_role("Event Host")
+    async def pickup(self, inter: discord.Interaction):
+        class pickupMaker(ui.Modal):
+            private_server_url = ui.TextInput(label= "Please enter your HBA Private Server link.", placeholder= "Paste Private Server link here.")
+            extra = ui.TextInput(label= "Does this pickup have a description?", style= discord.TextStyle.long, required= False)
+
+            async def on_submit(self, inter: discord.Interaction) -> None:
+                embed = discord.Embed(title= "A Pickup Is Being Hosted!", color= discord.Colour.gold())
+                embed.add_field(name= "``Host``", value= f"{inter.user.mention} ({inter.user.name})", inline=False)
+                embed.set_image(url = "https://media.discordapp.net/attachments/900196855663689730/947345003280203846/Handball_Thumbnail.png?width=1590&height=894")
+                
+                if self.extra.value:
+                    embed.add_field(name= "``Description``", value= self.extra.value)
+
+                pickupView = ui.View()
+
+                ps_button = ui.Button(label= "Click to Join", url= self.private_server_url.value)
+                ping_for_more = ui.Button(label= "Ping Again", style= discord.ButtonStyle.green, custom_id= "Ping Again")
+                delete = ui.Button(label= "Delete", style= discord.ButtonStyle.red, custom_id= "Delete Pickup")
+
+                pickupView.add_item(ps_button)
+                pickupView.add_item(ping_for_more)
+                pickupView.add_item(delete)
+
+                msg = await inter.guild.get_channel(917053987960782898).send(embed= embed, view= pickupView)
+                await msg.delete(delay= 60 * 60)
+
+                confirmationView = ui.View()
+                confirmationView.add_item(ui.Button(label= "Go To Message", url= msg.jump_url))
+
+                confirmation = discord.Embed(title= "Pickup Posted", description= "Your pickup has been posted.")
+
+                await inter.response.send_message(embed= confirmation, view= confirmationView, ephemeral= True)
+
+        await inter.response.send_modal(pickupMaker(title= "Pickup Maker"))
+
+tree.add_command(events())
 
 @api.resource("/verify")
 class Verify(Resource):
