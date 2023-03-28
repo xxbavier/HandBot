@@ -5,7 +5,9 @@ import time
 from email import header, message
 import sqlite3
 from ssl import Options
+import urllib.request as urlreq
 from urllib import response
+from urllib.parse import urlparse
 import discord
 from discord import player, app_commands, ui
 from discord.embeds import Embed
@@ -17,6 +19,9 @@ import time
 import threading
 import datetime
 import random
+
+import requests
+from bs4 import BeautifulSoup
 
 import roblox
 
@@ -56,7 +61,7 @@ htl_servers = {
     "Administration": 1020429868762144848
 }
 transactions_id = 917102767208816680
-transactions_enabled = True
+transactions_enabled = False
 
 token: str
 mongoLogIn: str
@@ -1275,12 +1280,30 @@ class events(app_commands.Group):
             async def on_submit(self, inter: discord.Interaction) -> None:
                 embed = discord.Embed(title= "A Pickup Is Being Hosted!", color= discord.Colour.gold())
                 embed.add_field(name= "``Host``", value= f"{inter.user.mention} ({inter.user.name})", inline=False)
-                embed.set_image(url = "https://media.discordapp.net/attachments/900196855663689730/947345003280203846/Handball_Thumbnail.png?width=1590&height=894")
                 
                 if self.extra.value:
                     embed.add_field(name= "``Description``", value= self.extra.value)
 
                 pickupView = ui.View()
+                
+                domain = urlparse(self.private_server_url.value).netloc
+
+                if domain != "www.roblox.com":
+                    raise Exception("The URL must be a Roblox URL.")
+
+                game_id = re.findall(r'\d+', self.private_server_url.value)[0]
+
+                response = requests.get(f"https://www.roblox.com/games/{game_id}")
+
+                soup = BeautifulSoup(response.text, 'html.parser')
+
+                try:
+                    img = soup.find("meta", property= "og:image")["content"]
+                except Exception:
+                    img = None
+
+                if img:
+                    embed.set_image(url = img)
 
                 ps_button = ui.Button(label= "Click to Join", url= self.private_server_url.value)
                 ping_for_more = ui.Button(label= "Ping Again", style= discord.ButtonStyle.green, custom_id= "Ping Again")
