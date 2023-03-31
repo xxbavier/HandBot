@@ -20,6 +20,8 @@ import threading
 import datetime
 import random
 
+import elo_system
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -79,9 +81,9 @@ except ConnectionFailure:
 databases = {
     "Player Data": mongoClient["Player_Data"],
     "Contracts": mongoClient["Contracts"],
-    "Demands": mongoClient["Demands"]
+    "Demands": mongoClient["Demands"],
+    "Season Info": mongoClient["SeasonInfo"]
 }
-
 
 app = Flask(__name__)
 api = Api(app)
@@ -377,7 +379,11 @@ async def on_interaction(inter: discord.Interaction):
         await inter.response.send_message(embed= embed, ephemeral= True, view=view)
     
     elif id == "Delete Pickup":
-        pass
+        embed = inter.message.embeds[0]
+        embed.title = "This Pickup Has Concluded!"
+        embed.set_image(url= None)
+
+        await inter.message.edit(embed= embed, view= None)
 
     elif id == "Add Roles":
         roles = get_roles(inter.user, True)
@@ -1265,8 +1271,34 @@ class admin(app_commands.Group):
         
         await inter.guild.get_channel(914661528593125387).send(embed= embed, view= informationView())
         await inter.response.send_message(content="*The information embed has been sent.*")
-
+    
 tree.add_command(admin())
+
+@app_commands.guild_only()
+class elo(app_commands.Group):
+    @app_commands.command()
+    async def view(self, inter: discord.Interaction):
+        pass
+
+    @app_commands.command()
+    async def test(self, inter: discord.Interaction):
+        pass
+
+    @app_commands.command()
+    @app_commands.checks.has_role("Founder")
+    async def update(self, team1: discord.Role, team2: discord.Role, winner: discord.Role):
+        old_elos = {
+            team1: 0,
+            team2: 0
+        }
+
+        new_elos = {
+            team1: elo_system.new_rating(old_elos["team1"], old_elos["team2"], team1 == winner),
+            team2: elo_system.new_rating(old_elos["team2"], old_elos["team1"], team2 == winner)
+        }
+
+        confirmation = discord.Embed(title= "Elo Confirmation", description= "Are you sure you want to make this update?", color= discord.Color.yellow())
+        confirmation.add_field(name= "``")
 
 @app_commands.guild_only()
 class events(app_commands.Group):
