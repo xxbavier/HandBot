@@ -386,11 +386,7 @@ async def on_interaction(inter: discord.Interaction):
         await inter.message.edit(embed= embed, view= None)
 
     elif id == "Ping Again":
-        for field in inter.message.embeds[0].fields:
-            if field.name == "``Host``":
-                host_mention = field.value
-
-        if inter.user.mention != host_mention and inter.guild.get_role(917055936349233272) not in inter.user.roles:
+        if inter.user.id != inter.message.embeds[0].author.name and inter.guild.get_role(917055936349233272) not in inter.user.roles:
             raise Exception("You do not have permission to do this!")
 
         await inter.message.reply(content= "<@&917051613196193812> this pickup is looking for more players!")
@@ -1322,6 +1318,7 @@ class events(app_commands.Group):
             async def on_submit(self, inter: discord.Interaction) -> None:
                 embed = discord.Embed(title= "A Pickup Is Being Hosted!", color= discord.Colour.gold())
                 embed.add_field(name= "``Host``", value= f"{inter.user.mention} ({inter.user.name})", inline=False)
+                embed.set_author(name= inter.user.id)
                 
                 if self.extra.value:
                     embed.add_field(name= "``Description``", value= self.extra.value)
