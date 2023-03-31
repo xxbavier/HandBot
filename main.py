@@ -385,6 +385,9 @@ async def on_interaction(inter: discord.Interaction):
 
         await inter.message.edit(embed= embed, view= None)
 
+    elif id == "Ping for More":
+        await inter.message.reply(message= "<@&917051613196193812> this pickup is looking for more players!")
+
     elif id == "Add Roles":
         roles = get_roles(inter.user, True)
         embed = discord.Embed(title= "Select roles you'd like to add.")
@@ -1345,7 +1348,7 @@ class events(app_commands.Group):
                 pickupView.add_item(ping_for_more)
                 pickupView.add_item(delete)
 
-                msg = await inter.guild.get_channel(917053987960782898).send(embed= embed, view= pickupView)
+                msg = await inter.guild.get_channel(917053987960782898).send(content= "<@&917051613196193812>", embed= embed, view= pickupView)
                 await msg.delete(delay= 60 * 60)
 
                 confirmationView = ui.View()
