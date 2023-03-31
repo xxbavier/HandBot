@@ -385,7 +385,7 @@ async def on_interaction(inter: discord.Interaction):
 
         await inter.message.edit(embed= embed, view= None)
 
-    elif id == "Ping for More":
+    elif id == "Ping Again":
         await inter.message.reply(message= "<@&917051613196193812> this pickup is looking for more players!")
 
     elif id == "Add Roles":
