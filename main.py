@@ -383,6 +383,9 @@ async def on_interaction(inter: discord.Interaction):
         embed.title = "This Pickup Has Concluded!"
         embed.set_image(url= None)
 
+        if str(inter.user.id) != inter.message.embeds[0].author.name:
+            raise Exception("You do not have permission to do this!")
+
         await inter.message.edit(embed= embed, view= None)
 
     elif id == "Ping Again":
