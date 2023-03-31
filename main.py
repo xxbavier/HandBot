@@ -386,6 +386,13 @@ async def on_interaction(inter: discord.Interaction):
         await inter.message.edit(embed= embed, view= None)
 
     elif id == "Ping Again":
+        for field in inter.message.embeds[0].fields:
+            if field.name == "``Host``":
+                host_mention = field.value
+
+        if inter.user.mention != host_mention and inter.guild.get_role(917055936349233272) not in inter.user.roles:
+            raise Exception("You do not have permission to do this!")
+
         await inter.message.reply(message= "<@&917051613196193812> this pickup is looking for more players!")
 
     elif id == "Add Roles":
