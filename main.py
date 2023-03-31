@@ -386,7 +386,7 @@ async def on_interaction(inter: discord.Interaction):
         await inter.message.edit(embed= embed, view= None)
 
     elif id == "Ping Again":
-        if inter.user.id != inter.message.embeds[0].author.name and inter.guild.get_role(917055936349233272) not in inter.user.roles:
+        if str(inter.user.id) != inter.message.embeds[0].author.name or inter.guild.get_role(917055936349233272) not in inter.user.roles:
             raise Exception("You do not have permission to do this!")
 
         await inter.message.reply(content= "<@&917051613196193812> this pickup is looking for more players!")
