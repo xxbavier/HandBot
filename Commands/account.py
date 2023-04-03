@@ -120,11 +120,11 @@ async def handle_interaction(inter: discord.Interaction):
                             "RobloxId": user.id,
                             "Elo": starting_elo,
                             "Medals": {
-                                "Handbowl Rings": {},
-                                "Tournament Rings": {},
-                                "Awards": {},
-                                "All Pros": {},
-                                "All Stars": {},
+                                "Handbowl Rings": [],
+                                "Tournament Rings": [],
+                                "Awards": [],
+                                "All Pros": [],
+                                "All Stars": [],
                                 "Hall of Fame": None,
                             }
                         }
@@ -272,7 +272,11 @@ class account(app_commands.Group):
                         if category == "Hall of Fame":
                             medals[category] = award
                         else:
-                            medals[category].append(award)
+                            try:
+                                medals[category].append(award)
+                            except AttributeError:
+                                medals[category] = []
+                                medals[category].append(award)
 
                         result = databases["Player Data"]["Careers"].update_one({'DiscordId': member.id}, {'$set': {"Medals": medals}})
                         print(result.matched_count)
