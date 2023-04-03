@@ -8,8 +8,38 @@ import roblox
 from roblox import Client, users, thumbnails
 from Modules.elo_system import starting_elo
 from Modules.database import databases
+from typing import List
 
 client = Client()
+
+async def awards_autocomplete(inter: discord.Integration, current: str) -> List[app_commands.Choice[str]]:
+    choices = []
+
+    awards = {
+        "Handbowl Rings": {
+            "Handbowl Champions"
+        },
+        "Awards": {
+            "Striker of the Year",
+            "Defender of the Year",
+            "Passer of the Year",
+            "Goalkeeper of the Year",
+            "Most Valuable Player"
+        },
+        "All Pros": [f"{o} Overall" for o in list(range(90, 100))],
+        "All Stars": {
+            "All-Star Team"
+        },
+        "Hall of Fame": {
+            "Hall of Fame"
+        }
+    }
+
+    for category, data in awards.items():
+        for award in data:
+            choices.append(app_commands.Choice(name= award, value= ",".join([category, award])))
+
+    return choices
 
 async def handle_interaction(inter: discord.Interaction):
     id = inter.data["custom_id"].split(" ")
@@ -95,11 +125,12 @@ async def handle_interaction(inter: discord.Interaction):
                                 "Awards": {},
                                 "All Pros": {},
                                 "All Stars": {},
-                                "Hall of Fame": False,
+                                "Hall of Fame": None,
                             }
                         }
 
                         await bot.get_guild(htl_servers["League"]).get_member(inter.user.id).add_roles(bot.get_guild(htl_servers["League"]).get_role(910371139803553812))
+                        await bot.get_channel(1070807124537507850).send(f"**{inter.user.mention}** ({inter.user.id}) has created an HTL Account using the following Roblox Account.\nhttps://www.roblox.com/users/{user.id}/profile")
                         databases["Player Data"]["Careers"].insert_one(account)
                         success = discord.Embed(title= "HTL Account Creation", description= "Congratulations! Your HTL Account has been officially created.", color= discord.Color.green())
                         await inter.message.edit(embed= success, view= None)
@@ -179,8 +210,10 @@ class account(app_commands.Group):
             if key != "Hall of Fame":
                 embed.add_field(name= f"``{key}``", value= f"> {len(medal)}", inline= False)
 
-        if cursor["Medals"]["Hall of Fame"]:
-            hof = "> This player is in the Hall of Fame."
+        hof_status = cursor["Medals"]["Hall of Fame"]
+
+        if hof_status:
+            hof = f"> {hof_status}"
         else:
             hof = "> This player is not in the Hall of Fame."
 
@@ -188,6 +221,96 @@ class account(app_commands.Group):
                 
         
         await inter.response.send_message(embed= embed)
+    
+    @app_commands.command()
+    @app_commands.autocomplete(award = awards_autocomplete)
+    @app_commands.checks.has_any_role("Founder", "President", "Director")
+    async def award(self, inter: discord.Interaction, htl_version: int, season: int, award: str, target_member: discord.Member= None, target_role: discord.Role= None, all_star_team_name: str= None):
+        award = award.split(",")
+        category = award[0]
+        award = award[1]
+
+        award_name = f"V{htl_version} S{season} {award}"
+
+        if award == "All-Star Team":
+            if not target_member:
+                raise Exception("The **target_member** field must be filled when awarding this award.")
+            
+            if all_star_team_name:
+                award += f" {all_star_team_name}"
+            else:
+                raise Exception("The All-Star Team Name field can not be left empty when assigning All-Star Awards.")
+            
+            target = target_member
+        elif category == "Handbowl Rings":
+            if not target_role:
+                raise Exception("The **target_role** field must be filled when awarding this award.")
+            
+            target = target_role
+        else:
+            if not target_member:
+                raise Exception("The **target_member** field must be filled when awarding this award.")
+            
+            target = target_member
+
+        embed = discord.Embed(title= "Awards", description= "Are you sure you want to award this award?", color= discord.Color.yellow())
+        embed.add_field(name= "``Target``", value= target.mention, inline= False)
+        embed.add_field(name= "``Award``", value= award_name)
+
+        awardConfirm = ui.View()
+
+        class apply(ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                awarded_string = "> "
+
+                def awardMember(member: discord.Member, award: str):
+                    cursor = databases['Player Data']["Careers"].find_one({'DiscordId': member.id})
+
+                    if cursor:
+                        medals = cursor["Medals"]
+
+                        if category == "Hall of Fame":
+                            medals[category] = award
+                        else:
+                            medals[category].append(award)
+
+                        result = databases["Player Data"]["Careers"].update_one({'DiscordId': member.id}, {'$set': {"Medals": medals}})
+                        print(result.matched_count)
+
+                        return True
+                    else:
+                        return False
+
+                if target == target_member:
+                    if awardMember(target, award_name):
+                        awarded_string += target.mention
+
+                
+                elif target == target_role:
+                    listOfPlayers = []
+
+                    for member in target.members:
+                        if awardMember(target, award_name):
+                            listOfPlayers.append(member.mention)
+                    
+                    awarded_string += "\n> ".join(listOfPlayers)
+
+                embed = discord.Embed(title= "Awarded Player(s)", description= "The following award was given to the following player(s).", color= discord.Color.green())
+                embed.add_field(name= "``Award``", value= award_name, inline= False)
+                embed.add_field(name= "``Player(s)``", value= awarded_string, inline= False)
+                embed.set_author(name= inter.user.name, icon_url= inter.user.avatar.url)
+                
+                await interaction.response.send_message(embed= embed)
+                await bot.get_channel(1092229921839005787).send(embed= embed)
+
+        class cancel(ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                await interaction.message.delete()
+
+        awardConfirm.add_item(apply(label= "Apply", style= discord.ButtonStyle.green))
+        awardConfirm.add_item(cancel(label= "Cancel", style= discord.ButtonStyle.red))
+
+        await inter.response.send_message(embed=embed, view= awardConfirm, ephemeral= True)
 
         
 

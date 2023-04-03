@@ -11,7 +11,7 @@ from flask import Flask
 from flask_restful import Api, Resource, reqparse
 from settings import htl_servers
 from Modules.teamRoles import *
-from Commands import account, admin, elo, events, free_agency, market, medals, moderation, teams
+from Commands import account, admin, elo, free_agency, market, medals, moderation, teams
 from inspect import getmembers, isfunction, isclass
 from Commands.free_agency import FA_Post
 from Modules.database import databases

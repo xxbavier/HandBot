@@ -24,6 +24,6 @@ class admin(app_commands.Group):
                 pass
         
         await inter.guild.get_channel(914661528593125387).send(embed= embed, view= informationView())
-        await inter.response.send_message(content="*The information embed has been sent.*")\
+        await inter.response.send_message(content="*The information embed has been sent.*")
 
 bot.tree.add_command(admin())
