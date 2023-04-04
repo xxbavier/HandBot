@@ -206,9 +206,9 @@ class account(app_commands.Group):
         embed.add_field(name= "``Roblox Account``", value= f"{robloxInfo.display_name} (@{robloxInfo.name})\n{robloxInfo.id}", inline= False)
         embed.add_field(name= "``Elo``", value= cursor["Elo"], inline= False)
         
-        for key, medal in cursor["Medals"].items():
+        '''for key, medal in cursor["Medals"].items():
             if key != "Hall of Fame":
-                embed.add_field(name= f"``{key}``", value= f"> {len(medal)}", inline= False)
+                embed.add_field(name= f"``{key}``", value= f"> {len(medal)}", inline= False)'''
 
         hof_status = cursor["Medals"]["Hall of Fame"]
 
@@ -218,9 +218,47 @@ class account(app_commands.Group):
             hof = "> This player is not in the Hall of Fame."
 
         embed.add_field(name= "``Hall of Fame``", value= hof, inline= False)
-                
-        
-        await inter.response.send_message(embed= embed)
+
+        options = [discord.SelectOption(label= category) for category in cursor["Medals"] if category != "Hall of Fame"]
+        options.insert(0, discord.SelectOption(label= "Main Page"))
+
+        class view(ui.View):
+            @ui.select(options= options, placeholder= "Select an option to view this player's data.")
+            async def callback(self, inter: discord.Interaction, selected: discord.SelectMenu):
+                embed = discord.Embed(title= f"{member.name}'s Account", color= member.color)
+                embed.set_thumbnail(url= thumbnail.image_url)
+
+                category = inter.data["values"][0]
+
+                if category == "Main Page":
+                    embed.add_field(name= "``Roblox Account``", value= f"{robloxInfo.display_name} (@{robloxInfo.name})\n{robloxInfo.id}", inline= False)
+                    embed.add_field(name= "``Elo``", value= cursor["Elo"], inline= False)
+
+                    hof_status = cursor["Medals"]["Hall of Fame"]
+
+                    if hof_status:
+                        hof = f"> {hof_status}"
+                    else:
+                        hof = "> This player is not in the Hall of Fame."
+
+                    embed.add_field(name= "``Hall of Fame``", value= hof, inline= False)
+
+                else:
+                    medal_count = len(cursor["Medals"][category])
+
+                    if medal_count > 0:
+                        embed.add_field(name= f"``{category}``", value= "> " + "\n> ".join(cursor["Medals"][category]))
+                    else:
+                        embed.add_field(name= f"``{category}``", value= "> No data recorded!")
+
+                    embed.set_footer(text= f"{medal_count} medals")
+
+                    embed.description = f"Here is the data this player has on record for the ``{category}`` category."
+
+                await inter.message.edit(embed= embed)
+                await inter.response.defer()
+
+        await inter.response.send_message(embed= embed, view= view())
     
     @app_commands.command()
     @app_commands.autocomplete(award = awards_autocomplete)
@@ -272,14 +310,15 @@ class account(app_commands.Group):
                         if category == "Hall of Fame":
                             medals[category] = award
                         else:
-                            try:
-                                medals[category].append(award)
-                            except AttributeError:
+                            if type(medals[category]) != list:
                                 medals[category] = []
-                                medals[category].append(award)
+                            
+                            if award in medals[category]:
+                                return False
 
-                        result = databases["Player Data"]["Careers"].update_one({'DiscordId': member.id}, {'$set': {"Medals": medals}})
-                        print(result.matched_count)
+                            medals[category].append(award)
+
+                        databases["Player Data"]["Careers"].update_one({'DiscordId': member.id}, {'$set': {"Medals": medals}})
 
                         return True
                     else:
@@ -294,7 +333,7 @@ class account(app_commands.Group):
                     listOfPlayers = []
 
                     for member in target.members:
-                        if awardMember(target, award_name):
+                        if awardMember(member, award_name):
                             listOfPlayers.append(member.mention)
                     
                     awarded_string += "\n> ".join(listOfPlayers)
@@ -307,12 +346,7 @@ class account(app_commands.Group):
                 await interaction.response.send_message(embed= embed)
                 await bot.get_channel(1092229921839005787).send(embed= embed)
 
-        class cancel(ui.Button):
-            async def callback(self, interaction: discord.Interaction):
-                await interaction.message.delete()
-
         awardConfirm.add_item(apply(label= "Apply", style= discord.ButtonStyle.green))
-        awardConfirm.add_item(cancel(label= "Cancel", style= discord.ButtonStyle.red))
 
         await inter.response.send_message(embed=embed, view= awardConfirm, ephemeral= True)
 

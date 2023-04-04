@@ -11,7 +11,7 @@ from flask import Flask
 from flask_restful import Api, Resource, reqparse
 from settings import htl_servers
 from Modules.teamRoles import *
-from Commands import account, admin, elo, free_agency, market, medals, moderation, teams
+from Commands import account, admin, elo, free_agency, market, medals, moderation, teams, events
 from inspect import getmembers, isfunction, isclass
 from Commands.free_agency import FA_Post
 from Modules.database import databases
@@ -328,7 +328,7 @@ async def on_interaction(inter: discord.Interaction):
 
         await inter.response.send_message(embed= embed, view= view, ephemeral= True)
 
-@tree.error
+#@tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
     embed = discord.Embed(title="Error", description="There was an error when processing the command.", color=discord.Color.red())
     embed.add_field(name= "``Error Description``", value= "*"+str(error)+"*")
