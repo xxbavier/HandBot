@@ -224,11 +224,11 @@ class account(app_commands.Group):
 
         class view(ui.View):
             @ui.select(options= options, placeholder= "Select an option to view this player's data.")
-            async def callback(self, inter: discord.Interaction, selected: discord.SelectMenu):
+            async def callback(self, interaction: discord.Interaction, selected: discord.SelectMenu):
                 embed = discord.Embed(title= f"{member.name}'s Account", color= member.color)
                 embed.set_thumbnail(url= thumbnail.image_url)
 
-                category = inter.data["values"][0]
+                category = interaction.data["values"][0]
 
                 if category == "Main Page":
                     embed.add_field(name= "``Roblox Account``", value= f"{robloxInfo.display_name} (@{robloxInfo.name})\n{robloxInfo.id}", inline= False)
@@ -255,8 +255,8 @@ class account(app_commands.Group):
 
                     embed.description = f"Here is the data this player has on record for the ``{category}`` category."
 
-                await inter.message.edit(embed= embed)
-                await inter.response.defer()
+                await interaction.message.edit(embed= embed)
+                await interaction.response.defer()
 
         await inter.response.send_message(embed= embed, view= view())
     
