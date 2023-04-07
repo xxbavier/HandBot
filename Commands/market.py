@@ -255,8 +255,6 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
         
         embed = transactionEmbed(e, team_role)
 
-        # You need to make it so that the code checks if the team has elo space
-
         if teamCheck(player, htl)[1] != team_role:
             raise Exception("Player must be on your team to use this command.")
         
@@ -271,6 +269,14 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
 
         embed.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
         embed.add_field(name="``Release``", value= f"{player.mention} ({player.name})", inline=False)
+
+        team_accounts = getTeamAccounts(team_role)
+        team_elo = get_total_elo(team_accounts)
+        target_elo = team_elo + profile["Elo"]
+        elo_cap = team_cap * 1200
+
+        average = get_team_average(team_accounts)
+        embed.add_field(name=f"``{team_role.name}``", value= f"> **Roster Size:** *{len(team_role.members)}*\n> **Elo Cap:** *{target_elo}/{elo_cap}*\n> **Elo Average:** *{round(average)}*", inline=False)
 
         await htl.get_channel(transactions_channel_id).send(
             embed= embed
@@ -306,8 +312,6 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
 
         valid_team = team_info[0]
         team_role = team_info[1]
-
-        team_elo = get_total_elo(getTeamAccounts(team_role))
         
         for e in htl.emojis:
             if team_role.name.find(e.name) > -1:
@@ -316,7 +320,7 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
         embed = transactionEmbed(e, team_role)
 
         profile = databases['Player Data']["Careers"].find_one({'DiscordId': player.id})
-
+        team_elo = get_total_elo(getTeamAccounts(team_role))
         target_elo = team_elo + profile["Elo"]
         elo_cap = team_cap * 1200
 
@@ -359,7 +363,6 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
         embed.add_field(name="``Sign``", value= f"{player.mention} ({player.name})", inline=False)
         
         average = get_team_average(getTeamAccounts(team_role))
-
         embed.add_field(name=f"``{team_role.name}``", value= f"> **Roster Size:** *{len(team_role.members)}*\n> **Elo Cap:** *{target_elo}/{elo_cap}*\n> **Elo Average:** *{round(average)}*", inline=False)
 
         await htl.get_channel(transactions_channel_id).send(
