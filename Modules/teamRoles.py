@@ -1,5 +1,6 @@
 import discord
 from settings import bot
+from Modules.database import databases
 
 coachRoles = {
     'TO': 917068655928442930, # TO
@@ -27,6 +28,17 @@ def teamCheck(user, htl):
             break
         
     return [onTeam, teamRole]
+
+def getTeamAccounts(team: discord.Role):
+    accounts = []
+
+    for member in team.members:
+        profile = databases["Player Data"]["Careers"].find_one({"DiscordId": member.id})
+
+        if profile:
+            accounts.append(profile)
+
+    return accounts
 
 def isTeamRole(guild_id: str, role_id: int):
     role = bot.get_guild(guild_id).get_role(role_id)

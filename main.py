@@ -7,11 +7,9 @@ import random
 import roblox
 import json
 import asyncio
-from flask import Flask
-from flask_restful import Api, Resource, reqparse
 from settings import htl_servers
 from Modules.teamRoles import *
-from Commands import account, admin, elo, free_agency, market, medals, moderation, teams, events
+from Commands import account, admin, elo, free_agency, market, moderation, teams, events
 from inspect import getmembers, isfunction, isclass
 from Commands.free_agency import FA_Post
 from Modules.database import databases
@@ -29,10 +27,6 @@ mongoLogIn: str
 
 # Initiate
 roClient = roblox.Client()
-
-app = Flask(__name__)
-api = Api(app)
-
 tree = bot.tree
 
 def get_roles(member: discord.Member, adding_roles: bool):
@@ -335,21 +329,6 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
 
     await interaction.response.send_message(embed= embed, ephemeral=True)
 
-
-'''@app_commands.guild_only()
-class interest_sign_up(app_commands.Group, name= "interestform"):
-    @app_commands.command()
-    async def create(self, inter: discord.interactions.Interaction) -> None:
-        await inter.response.send_modal(InterestForm())
-
-    @app_commands.command()
-    async def view(self, inter: discord.interactions.Interaction) -> None:
-        pass
-
-    @app_commands.command()
-    async def edit(self, inter: discord.interactions.Interaction) -> None:
-        pass'''
-
 @tree.command()
 async def positions(inter: discord.interactions.Interaction):
     embed = discord.Embed(title="Handball Positions", description="This is a list of officially recognized *Handball: The League* positions.", color=discord.Color.purple())
@@ -429,165 +408,4 @@ async def game_results(inter: discord.interactions.Interaction, stats_video: str
 
     await inter.response.send_modal(ReportScores())
 
-#@tree.command()
-async def verify(inter: discord.interactions.Interaction):
-    isPlayerVerified = databases["Player Data"]["Verification"].find_one({
-        'discord': inter.user.name
-    })
-
-    if isPlayerVerified:
-        if isPlayerVerified["confirmed"]:
-            await inter.user.add_roles(910371139803553812)
-            raise Exception("You are already verified!")
-
-    await inter.response.send_message(content="***Check your DMs with {}!***".format(bot.user.mention), ephemeral= True)
-
-    embed = discord.Embed(title= "HTL Verification", description="Welcome to the HTL verification system! Once you finish this, you will have full access to HTL.")
-    embed.add_field(name="``Get Started``", value= "Click \"Start\" below to begin.")
-
-    class stepOne(ui.View):
-        @ui.button(label='Start', style= discord.ButtonStyle.green)
-        async def start(self, interaction: discord.Interaction, button: discord.ui.Button):
-            class modal(ui.Modal, title= "Verification | Step One"):
-                robloxUsername = ui.TextInput(label="What is your Roblox username?")
-
-                async def on_submit(self, interaction: discord.interactions.Interaction):
-                    robloxUsername = self.robloxUsername.value
-                    
-                    try:
-                        user: roblox.BaseUser = await roClient.get_user_by_username(robloxUsername)
-                    except roblox.UserNotFound:
-                        await interaction.response.send_message(content="*User was not found. Please restart using the ``/verify`` command.*")
-                        await interaction.message.delete()
-                        return
-
-                    confirm = discord.Embed(title= "Is this you?")
-                    confirm.add_field(name= "``Username``", value= user.name)
-                    confirm.add_field(name= "``UserId``", value= user.id)
-
-                    thumbnails = await roClient.thumbnails.get_user_avatar_thumbnails(
-                        users= [user],
-                        type= roblox.thumbnails.AvatarThumbnailType.headshot,
-                        size= (100,100)
-                    )
-
-                    if len(thumbnails) > 0:
-                        confirm.set_thumbnail(url= thumbnails[0].image_url)
-
-                    class confirmView(ui.View):
-                        @ui.button(label= "Yes", style=discord.ButtonStyle.green)
-                        async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-                            async def checkGroup():
-                                group = await roClient.get_group(10195697)
-                                members = await group.get_members().flatten()
-                                
-                                inGroup = False
-
-                                for member in members:
-                                    if member.id == user.id:
-                                        inGroup = True
-                                        break
-
-                                return inGroup
-
-                            await interaction.message.delete()
-                            await interaction.response.send_message("*I am checking if your account is in the HTL Roblox group...*")
-                            if not await checkGroup():
-                                await interaction.user.send("*It appears that you are not in the HTL group.\nJoin this group and then try again: {}*".format("https://www.roblox.com/groups/10195697/Handball-The-League#!/about"))
-                            else:
-                                try:
-                                    databases["Player Data"]["Verification"].update_one({'discord': inter.user.id}, {'$set': {'roblox': user.id, 'confirmed': False, 'discord_username': inter.user.name}}, upsert=True)
-                                except:
-                                    await interaction.user.send(content="*There was an error during saving your information. Please restart using the ``/verify`` command.")
-                                    return
-                                    
-                                await interaction.delete_original_response()
-                                await interaction.user.send(content="**Your information has been saved, you are almost done!\n\nAll you have to do is join the following game and click \"Verify\"\nhttps://www.roblox.com/games/6732385646/Handball-The-Hub.**")
-                            
-                        @ui.button(label= "No", style= discord.ButtonStyle.red)
-                        async def decline(self, interaction: discord.Interaction, button: discord.ui.Button):
-                            await interaction.response.send_message(content="*Please restart by using the ``/verify`` command.*")
-
-                    await msg.delete()
-                    await interaction.response.send_message(embed= confirm, view= confirmView())
-
-
-            await interaction.response.send_modal(modal())
-
-    msg = await inter.user.send(embed=embed, view=stepOne())
-
-@api.resource("/verify")
-class Verify(Resource):
-    def get(self):
-        reqparser = reqparse.RequestParser()
-
-        reqparser.add_argument("platform", required= True)
-        reqparser.add_argument("id", required= True)
-
-        args = reqparser.parse_args()
-
-        data = databases["Player Data"]["Verification"].find_one({
-            args["platform"]: args["id"]
-        })
-
-        if data:
-            ids = {}
-
-            try:
-                ids["discord"] = data["discord"]
-            except:
-                ids["discord"] = None
-            
-            try:
-                ids["roblox"] = data["roblox"]
-            except:
-                ids["roblox"] = None
-
-            try:
-                ids["confirmed"] = data["confirmed"]
-            except:
-                ids["confirmed"] = False
-
-            return {
-                'discord': ids["discord"],
-                'roblox': ids["roblox"],
-                'confirmed': ids["confirmed"]
-            }
-
-        return None
-
-    def post(self):
-        reqparser = reqparse.RequestParser()
-
-        reqparser.add_argument("platform", required= True)
-        reqparser.add_argument("id", required= True)
-
-        args = reqparser.parse_args()
-
-        data = databases["Player Data"]["Verification"].find_one({
-            args["platform"]: args["id"]
-        })
-
-        if data:
-            databases["Player Data"]["Verification"].update_one({'discord': data["discord"], 'roblox': data["roblox"]}, {'$set': {'confirmed': True}})
-
-            member = bot.get_guild(htl_servers["League"]).get_member(data["discord"])
-            embed = discord.Embed(title= member.name, color= discord.Color.green())
-            embed.add_field(name="``Member Mention``", value= member.mention, inline= True)
-            embed.add_field(name="``Member ID``", value= member.id, inline= True)
-
-            asyncio.run(bot.get_guild(htl_servers["League"]).get_channel(1070807124537507850).send(embed=embed))
-
-            return {"Success": "Your account has been confirmed!"}
-
-        return {"Error": "No data found for this user. Begin verification process in HTL."}
-
-
-discordBot = threading.Thread(target=bot.run, kwargs=({'token': token}))
-apiServer = threading.Thread(target=app.run, kwargs={'host': '0.0.0.0'})
-
-discordBot.start()
-apiServer.start()
-
-discordBot.join()
-apiServer.join()
+bot.run(token= token)

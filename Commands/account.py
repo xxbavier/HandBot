@@ -225,6 +225,9 @@ class account(app_commands.Group):
         class view(ui.View):
             @ui.select(options= options, placeholder= "Select an option to view this player's data.")
             async def callback(self, interaction: discord.Interaction, selected: discord.SelectMenu):
+                if interaction.user.id != inter.user.id:
+                    return
+                    
                 embed = discord.Embed(title= f"{member.name}'s Account", color= member.color)
                 embed.set_thumbnail(url= thumbnail.image_url)
 

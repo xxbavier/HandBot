@@ -1,9 +1,10 @@
 import discord
-from discord import app_commands
-from Modules.teamRoles import teamCheck, coachRoles, coachCheck, teamCheckBool
+from discord import app_commands, ui
+from Modules.teamRoles import teamCheck, coachRoles, coachCheck, teamCheckBool, getTeamAccounts
+from Modules.elo_system import get_total_elo, get_team_average
 from Modules.database import databases
 from Modules.member_strings import *
-from settings import transactions_enabled, transactions_channel_id, bot, htl_servers
+from settings import transactions_enabled, transactions_channel_id, bot, htl_servers, team_cap
 import time
 
 def transactionEmbed(emoji, team_role):
@@ -226,9 +227,16 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
             embed= embed
         )
 
+        await bot.tree.get_command("admin").get_command("leaderboard").get_command("update").callback(self= None, inter= inter)
+
     @app_commands.command(description="Remove players from your team's roster.")
     @app_commands.checks.has_any_role("Team Owner", "General Manager")
-    async def release(self, inter: discord.interactions.Interaction, players: str):
+    async def release(self, inter: discord.interactions.Interaction, player: discord.Member):
+        profile = databases["Player Data"]["Careers"].find_one({"DiscordId": inter.user.id})
+
+        if not profile:
+            raise Exception("You need an HTL Account to use this command.")
+
         if not transactions_enabled:
             raise Exception("Transactions are closed.")
             
@@ -247,41 +255,27 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
         
         embed = transactionEmbed(e, team_role)
 
-        players = get_members_from_string(players, htl)
+        # You need to make it so that the code checks if the team has elo space
 
-        error_players = []
+        if teamCheck(player, htl)[1] != team_role:
+            raise Exception("Player must be on your team to use this command.")
+        
+        await player.remove_roles(team_role, htl.get_role(coachRoles["GM"]))
 
-        for player in players:
-            if teamCheck(player, htl)[1] != team_role:
-                players.remove(player)
-                error_players.append(player)
-                continue
-            
-            await player.remove_roles(team_role, htl.get_role(coachRoles["GM"]))
+        noti= discord.Embed(title= "You have been released from: {} {}".format(e, team_role.name), description= "", colour= discord.Color.red())
+        noti.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
 
-            noti= discord.Embed(title= "You have been released from: {} {}".format(e, team_role.name), description= "", colour= discord.Color.red())
-            noti.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
-
-            await player.send(
-                embed= noti
-            )
-
-        releasedPlayers = make_players_string(players)
+        await player.send(
+            embed= noti
+        )
 
         embed.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+        embed.add_field(name="``Release``", value= f"{player.mention} ({player.name})", inline=False)
 
-        if len(players) != 0: 
-            embed.add_field(name="``Release``", value= releasedPlayers, inline=False)
-
-            await htl.get_channel(transactions_channel_id).send(
-                embed= embed
-            )
+        await htl.get_channel(transactions_channel_id).send(
+            embed= embed
+        )
         
-        if len(error_players) != 0:
-            string_players = make_players_string(error_players)
-
-            embed.add_field(name= "``Failed to Release``", value= string_players)
-
         await author.send(
             content = "***You have just made a transaction.***",
             embed= embed
@@ -291,10 +285,17 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
             content= "***Check your Direct Messages with {} ({}).***".format(bot.user.mention, bot.user.name),
             ephemeral= True
         )
+
+        await bot.tree.get_command("admin").get_command("leaderboard").get_command("update").callback(self= None, inter= inter)
     
     @app_commands.command(description="Add players to your team's roster.")
     @app_commands.checks.has_any_role("Team Owner", "General Manager")
-    async def sign(self, inter: discord.interactions.Interaction, players: str):
+    async def sign(self, inter: discord.interactions.Interaction, player: discord.Member):
+        profile = databases["Player Data"]["Careers"].find_one({"DiscordId": inter.user.id})
+
+        if not profile:
+            raise Exception("You need an HTL Account to use this command.")
+
         if not transactions_enabled:
             raise Exception("Transactions are closed")
 
@@ -305,6 +306,8 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
 
         valid_team = team_info[0]
         team_role = team_info[1]
+
+        team_elo = get_total_elo(getTeamAccounts(team_role))
         
         for e in htl.emojis:
             if team_role.name.find(e.name) > -1:
@@ -312,43 +315,57 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
         
         embed = transactionEmbed(e, team_role)
 
-        players = get_members_from_string(players, htl)
+        profile = databases['Player Data']["Careers"].find_one({'DiscordId': player.id})
 
-        error_players = []
+        target_elo = team_elo + profile["Elo"]
+        elo_cap = team_cap * 1200
 
-        for player in players:
-            if teamCheck(player, htl)[0] or len(team_role.members) >= 15 or player.bot or not (inter.guild.get_role(910371139803553812) in player.roles):
-                players.remove(player)
-                error_players.append(player)
+        if not profile:
+            missing_account = discord.Embed(title= "You do not have an HTL Account!", description= "A team coach has attempted to sign you; however, you do not have an HTL Account!\n\nClick the button to create an account.")
 
-                continue
+            class view(ui.View):
+                @ui.button(label= "Create an Account", style= discord.ButtonStyle.blurple)
+                async def callback(self, inter: discord.Interaction, b):
+                    await bot.tree.get_command("account").get_command("create").callback(self= None, inter= inter)
 
-            await player.add_roles(team_role)
 
-            noti= discord.Embed(title= "You have been signed to: {} {}".format(e, team_role.name), description= "If you did not give permission to this user to sign you, please create a support ticket in <#917085749030031390>.", colour= team_role.color)
-            noti.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+            await player.send(embed= missing_account, view= view())
+            raise Exception("Player does not have an HTL Account.")
+        
+        elif teamCheck(player, htl)[0]:
+            raise Exception("Player is already on a team.")
 
-            await player.send(
-                embed= noti
-            )
+        elif team_elo + profile["Elo"] > team_cap * 1200:
+            raise Exception(f"You need ``{target_elo - elo_cap}`` more Elo space available to make this transaction")
 
-        signedPlayers = make_players_string(players)
+        elif player.bot:
+            raise Exception("You can not sign bots!")
+
+        elif not (inter.guild.get_role(910371139803553812) in player.roles):
+            role = inter.guild.get_role(910371139803553812)
+
+            raise Exception(f"Player does not have the {role.mention} role.")    
+
+        await player.add_roles(team_role)
+
+        noti= discord.Embed(title= "You have been signed to: {} {}".format(e, team_role.name), description= "If you did not give permission to this user to sign you, please create a support ticket in <#917085749030031390>.", colour= team_role.color)
+        noti.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
+
+        await player.send(
+            embed= noti
+        )
 
         embed.add_field(name="``Coach``", value= "{} ({})".format(author.mention, author.name), inline=False)
-
-        if len(players) != 0: 
-            embed.add_field(name="``Sign``", value= signedPlayers, inline=False)
-            embed.add_field(name="``Roster Count``", value= str(len(team_role.members)), inline=False)
-
-            await htl.get_channel(transactions_channel_id).send(
-                embed= embed
-            )
+        embed.add_field(name="``Sign``", value= f"{player.mention} ({player.name})", inline=False)
         
-        if len(error_players) != 0:
-            string_players = make_players_string(error_players)
+        average = get_team_average(getTeamAccounts(team_role))
 
-            embed.add_field(name= "``Failed to Sign``", value= string_players)
+        embed.add_field(name=f"``{team_role.name}``", value= f"> **Roster Size:** *{len(team_role.members)}*\n> **Elo Cap:** *{target_elo}/{elo_cap}*\n> **Elo Average:** *{round(average)}*", inline=False)
 
+        await htl.get_channel(transactions_channel_id).send(
+            embed= embed
+        )
+        
         await author.send(
             content = "***You have just made a transaction.***",
             embed= embed
@@ -358,5 +375,7 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
             content= "***Check your Direct Messages with {} ({}).***".format(bot.user.mention, bot.user.name),
             ephemeral= True
         )
+
+        await bot.tree.get_command("admin").get_command("leaderboard").get_command("update").callback(self= None, inter= inter)
 
 bot.tree.add_command(market())

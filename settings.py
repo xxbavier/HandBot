@@ -3,6 +3,8 @@ from discord.ext import commands
 
 transactions_enabled = False
 transactions_channel_id = 917102767208816680
+leaderboard_message_id = 1093693549968633906
+team_cap = 15
 
 htl_servers = {
     "League": 909153380268650516,
