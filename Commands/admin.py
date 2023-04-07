@@ -195,6 +195,7 @@ class admin(app_commands.Group):
     leaderboard = app_commands.Group(name= "leaderboard", description= "Change the HTL leaderboard")
     
     @leaderboard.command()
+    @app_commands.checks.has_any_role("Founder", "President", "Director")
     async def create(self, inter: discord.Interaction):
         lb = discord.Embed(title= "HTL Leaderboard")
 
@@ -239,6 +240,7 @@ class admin(app_commands.Group):
         await inter.response.send_message(content= "Leaderboard has been created!", ephemeral= True)
 
     @leaderboard.command()
+    @app_commands.checks.has_any_role("Founder", "President", "Director")
     async def update(self, inter: discord.Interaction, message: str= str(leaderboard_message_id)):
         msg = await inter.guild.get_channel(1024370000968044545).fetch_message(int(message))
 
