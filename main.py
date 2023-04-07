@@ -9,7 +9,7 @@ import json
 import asyncio
 from settings import htl_servers
 from Modules.teamRoles import *
-from Commands import account, admin, elo, free_agency, market, moderation, teams, events
+from Commands import account, admin, elo, market, moderation, teams, events
 from inspect import getmembers, isfunction, isclass
 from Commands.free_agency import FA_Post
 from Modules.database import databases
