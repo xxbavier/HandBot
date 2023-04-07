@@ -151,7 +151,7 @@ async def handle_interaction(inter: discord.Interaction):
 @app_commands.guild_only()
 class account(app_commands.Group):
     @app_commands.command()
-    @app_commands.checks.has_role(927074131227324446)
+    @app_commands.checks.has_role("Membership")
     async def create(self, inter: discord.Interaction):
         hasAccount = False
 

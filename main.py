@@ -240,15 +240,7 @@ async def on_interaction(inter: discord.Interaction):
         elif values[0] == "Pickups":
             embed.description = "**Pickup games are mock games ran by the community.**\n\n> *Pickups are a great way to get yourself involved in HTL and to get others to notice your skill.*"
         elif values[0] == "Free Agency":
-            embed.description = "**Teams are often looking for new players for their rosters and like to scout new players.**\n\n> *You can get noticed by posting a Free Agency advertisement using the Handbot or by responding to posts made by Team Coaches in the scouting channel.*"
-
-            class freeAgencyView(ui.View):
-                @ui.button(label= "Post Free Agent Ad", style= discord.ButtonStyle.blurple)
-                async def callback(self, inter: discord.Interaction, extra):
-                    await inter.response.send_modal(FA_Post())
-
-            view = freeAgencyView()
-
+            embed.description = "**Teams are often looking for new players for their rosters and like to scout new players.**\n\n> *You can get noticed by posting a Free Agency advertisement in <#1093676364504256612> or by responding to posts made by Team Coaches in <#1093701368902066236>.*"
         elif values[0] == "Chat":
             embed.description = "**Talking to other members in the league and forming connections is a good way to get involved in the league.**\n\n> *Some teams tend to tryout/recruit members that are active in the community; in addition, forming connections is a good way to form a team if a member is interested in owning a team.*"
 
