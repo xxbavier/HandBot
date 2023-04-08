@@ -178,7 +178,7 @@ class account(app_commands.Group):
             msg = await inter.user.send(embed= creation_embed, view= creation_view)
 
             goToDM = ui.View()
-            goToDM.add_item(ui.Button(label= "Go To DMs", url= msg.jump_url))     
+            goToDM.add_item(ui.Button(label= "Go To DMs", url= msg.jump_url))    
 
         await inter.response.send_message(embed= embed, view= goToDM, ephemeral= True)
 
