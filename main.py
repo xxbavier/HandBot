@@ -314,6 +314,14 @@ async def on_interaction(inter: discord.Interaction):
 
         await inter.response.send_message(embed= embed, view= view, ephemeral= True)
 
+    elif id == "start htl":
+        if not (inter.guild.get_role(927074131227324446) in inter.user.roles):
+            err = discord.Embed(title= "DoubleCounter Verification", description= "You must verify using DoubleCounter before you can create an HTL Account.", color= discord.Color.green())
+            await inter.response.send_message(embed= err, ephemeral= True)
+            return
+
+        await bot.tree.get_command("account").get_command("create").callback(self= None, inter= inter)
+
 @tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
     embed = discord.Embed(title="Error", description="There was an error when processing the command.", color=discord.Color.red())

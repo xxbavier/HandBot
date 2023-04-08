@@ -41,7 +41,16 @@ class admin(app_commands.Group):
                 pass
         
         await inter.guild.get_channel(914661528593125387).send(embed= embed, view= informationView())
+
+        account_embed = discord.Embed(title= "HTL Accounts", description= "Click the button below to create an HTL Account!\n\nHTL Accounts...\n- Allow you to be signed to teams\n- Tracks your HTL career\n- And more!\n\n**You need to have verified through DoubleCounter before you can create an HTL Account.**")
+        htl_account = ui.View()
+        
+        htl_account.add_item(ui.Button(label= "Create an Account", style= discord.ButtonStyle.blurple, custom_id= "start htl"))
+                
+            
+        await inter.guild.get_channel(914661528593125387).send(embed= account_embed, view= htl_account)
         await inter.response.send_message(content="*The information embed has been sent.*")
+        
 
 
     @app_commands.command()
