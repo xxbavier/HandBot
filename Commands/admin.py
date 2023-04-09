@@ -60,7 +60,9 @@ class admin(app_commands.Group):
         winning_team = inter.guild.get_role(int(winning_team))
         losing_team = inter.guild.get_role(int(losing_team))
 
-        game = get_game(game_id)
+        with open("random.json", "r") as file:
+            game = json.load(file) #get_game(game_id)
+
         player_ids = game["PlayerIds"]
         stats = game["Stats"]
         total_stats = {
@@ -71,14 +73,14 @@ class admin(app_commands.Group):
 
         for category in stats.values():
             for id, subcategory in category.items():
-                for name, value in subcategory.items():
-                    if name == "Misses":
-                        continue
+                #for name, value in subcategory.items():
+                    #if name == "Misses":
+                        #continue
 
                     try:
-                        total_stats["Players"][int(id)] += value
+                        total_stats["Players"][int(id)] += subcategory
                     except KeyError:
-                        total_stats["Players"][int(id)] = value
+                        total_stats["Players"][int(id)] = subcategory
 
         accounts = {"Winning Team": [], "Losing Team": []}
         active_accounts = {"Winning Team": [], "Losing Team": []}
@@ -138,7 +140,10 @@ class admin(app_commands.Group):
             new_account["Elo"] = new_elo
             updated_accounts["Losing Team"].append(new_account)
 
-        strings = []
+        strings = {
+            "Decrease": [],
+            "Increase": []
+        }
 
         for data in affected:
             roblox_username = await roclient.get_user(data["Account"]["RobloxId"])
@@ -153,10 +158,14 @@ class admin(app_commands.Group):
             if not data["Increase"]:
                 emoji = "<:elo_decrease:1091348984838242394>"
 
-            strings.append(f"**{discord_mention}** ``{roblox_username}`` | *{old_elo}* {emoji} *{new_elo}*")
+            if not data["Increase"]:
+                strings["Decrease"].append(f"**{discord_mention}** ``{roblox_username}`` | *{old_elo}* {emoji} *{new_elo}*")
+            else:
+                strings["Increase"].append(f"**{discord_mention}** ``{roblox_username}`` | *{old_elo}* {emoji} *{new_elo}*")
         
         elo_changes = discord.Embed(title= "Elo Changes", description= "The following Elos will be modified.")
-        elo_changes.add_field(name= "``Players``", value= "> " + "\n> ".join(strings), inline= False)
+        elo_changes.add_field(name= "``Players (Increases)``", value= "> " + "\n> ".join(strings["Increase"]), inline= False)
+        elo_changes.add_field(name= "``Players (Decreases)``", value= "> " + "\n> ".join(strings["Decrease"]), inline= False)
 
         team_strings = []
         old_winning_team_elo = round(team_elos["Winning Team"])

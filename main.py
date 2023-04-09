@@ -322,7 +322,7 @@ async def on_interaction(inter: discord.Interaction):
 
         await bot.tree.get_command("account").get_command("create").callback(self= None, inter= inter)
 
-@tree.error
+#tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
     embed = discord.Embed(title="Error", description="There was an error when processing the command.", color=discord.Color.red())
     embed.add_field(name= "``Error Description``", value= "*"+str(error)+"*")
