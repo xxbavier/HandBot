@@ -321,7 +321,6 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
 
         profile = databases['Player Data']["Careers"].find_one({'DiscordId': player.id})
         team_elo = get_total_elo(getTeamAccounts(team_role))
-        target_elo = team_elo + profile["Elo"]
         elo_cap = team_cap * 1200
 
         if not profile:
@@ -340,6 +339,7 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
             raise Exception("Player is already on a team.")
 
         elif team_elo + profile["Elo"] > team_cap * 1200:
+            target_elo = team_elo + profile["Elo"]
             raise Exception(f"You need ``{target_elo - elo_cap}`` more Elo space available to make this transaction")
 
         elif player.bot:

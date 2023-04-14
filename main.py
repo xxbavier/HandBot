@@ -9,7 +9,7 @@ import json
 import asyncio
 from settings import htl_servers
 from Modules.teamRoles import *
-from Commands import account, admin, elo, market, moderation, teams, events
+from Commands import account, admin, elo, market, moderation, teams, events, apply
 from inspect import getmembers, isfunction, isclass
 from Commands.free_agency import FA_Post
 from Modules.database import databases
@@ -35,7 +35,8 @@ def get_roles(member: discord.Member, adding_roles: bool):
         ["🎮", "Event Pings", 917051775754829874],
         ["📺", "Stream Pings", 1088688412850135112],
         ["🚫", "Mute Partnerships", 917051682343501884],
-        ["🔰", "Team Owner Interest", 944096262779719681]
+        ["🔰", "Team Owner Interest", 944096262779719681],
+        ["🔨", "Handball Development", 1096528717557284944]
     ]
 
     approved_role_choices = []

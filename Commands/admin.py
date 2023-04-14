@@ -60,8 +60,7 @@ class admin(app_commands.Group):
         winning_team = inter.guild.get_role(int(winning_team))
         losing_team = inter.guild.get_role(int(losing_team))
 
-        with open("random.json", "r") as file:
-            game = json.load(file) #get_game(game_id)
+        game = get_game(game_id)
 
         player_ids = game["PlayerIds"]
         stats = game["Stats"]
@@ -73,14 +72,14 @@ class admin(app_commands.Group):
 
         for category in stats.values():
             for id, subcategory in category.items():
-                #for name, value in subcategory.items():
-                    #if name == "Misses":
-                        #continue
+                for name, value in subcategory.items():
+                    if name == "Misses":
+                        continue
 
                     try:
-                        total_stats["Players"][int(id)] += subcategory
+                        total_stats["Players"][int(id)] += value
                     except KeyError:
-                        total_stats["Players"][int(id)] = subcategory
+                        total_stats["Players"][int(id)] = value
 
         accounts = {"Winning Team": [], "Losing Team": []}
         active_accounts = {"Winning Team": [], "Losing Team": []}
