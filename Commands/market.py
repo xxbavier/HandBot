@@ -323,6 +323,9 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
         team_elo = get_total_elo(getTeamAccounts(team_role))
         elo_cap = team_cap * 1200
 
+        if profile:
+            target_elo = team_elo + profile["Elo"]
+
         if not profile:
             missing_account = discord.Embed(title= "You do not have an HTL Account!", description= "A team coach has attempted to sign you; however, you do not have an HTL Account!\n\nClick the button to create an account.")
 
@@ -339,7 +342,6 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
             raise Exception("Player is already on a team.")
 
         elif team_elo + profile["Elo"] > team_cap * 1200:
-            target_elo = team_elo + profile["Elo"]
             raise Exception(f"You need ``{target_elo - elo_cap}`` more Elo space available to make this transaction")
 
         elif player.bot:

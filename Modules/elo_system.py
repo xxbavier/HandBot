@@ -32,7 +32,7 @@ def new_rating(target_rating: float, opponent_rating: float, target_won: bool, p
     if target_won:
         won_binary = 1
 
-    rating = target_rating + increment * (won_binary - get_estimated_score(target_rating, opponent_rating)) * multipler
+    rating = target_rating + increment * (won_binary - get_estimated_score(target_rating, opponent_rating))# * multipler
 
     return rating
 
