@@ -345,12 +345,7 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
             raise Exception(f"You need ``{target_elo - elo_cap}`` more Elo space available to make this transaction")
 
         elif player.bot:
-            raise Exception("You can not sign bots!")
-
-        elif not (inter.guild.get_role(910371139803553812) in player.roles):
-            role = inter.guild.get_role(910371139803553812)
-
-            raise Exception(f"Player does not have the {role.mention} role.")    
+            raise Exception("You can not sign bots!")   
 
         await player.add_roles(team_role)
 
