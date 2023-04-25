@@ -11,7 +11,6 @@ from settings import htl_servers
 from Modules.teamRoles import *
 from Commands import moderation
 from inspect import getmembers, isfunction, isclass
-from Commands.free_agency import FA_Post
 from Modules.database import databases
 
 try:
@@ -331,7 +330,7 @@ async def on_app_command_error(interaction: discord.Interaction, error: discord.
 
     await interaction.response.send_message(embed= embed, ephemeral=True)
 
-@tree.command()
+#@tree.command()
 async def positions(inter: discord.interactions.Interaction):
     embed = discord.Embed(title="Handball Positions", description="This is a list of officially recognized *Handball: The League* positions.", color=discord.Color.purple())
     embed.add_field(name= ":one: ``Striker``", value="Strikers focus on scoring the points. Strikers can usually be found on the opponent's side of the court.", inline= False)
@@ -341,7 +340,7 @@ async def positions(inter: discord.interactions.Interaction):
 
     await inter.response.send_message(embed= embed, ephemeral= True)
 
-@tree.command()
+#@tree.command()
 @app_commands.checks.has_any_role("Team Owner", "General Manager", "Referees", "Streamers")
 async def game_results(inter: discord.interactions.Interaction, stats_video: str = None, stats_file1: discord.Attachment = None, stats_file2: discord.Attachment = None, stats_file3: discord.Attachment = None, stats_file4: discord.Attachment = None, stats_file5: discord.Attachment = None, stats_file6: discord.Attachment = None, stats_file7: discord.Attachment = None):
     files = []
