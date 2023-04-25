@@ -9,7 +9,7 @@ import json
 import asyncio
 from settings import htl_servers
 from Modules.teamRoles import *
-from Commands import account, admin, elo, market, moderation, teams, events, apply
+from Commands import moderation
 from inspect import getmembers, isfunction, isclass
 from Commands.free_agency import FA_Post
 from Modules.database import databases
@@ -154,7 +154,8 @@ async def on_interaction(inter: discord.Interaction):
         return
 
     if id.split(" ")[0] == "account":
-        await account.handle_interaction(inter)
+        pass
+        #await account.handle_interaction(inter)
 
     if id == "Information":
         embed = discord.Embed(title= values[0])
