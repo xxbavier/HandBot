@@ -107,4 +107,24 @@ class moderation(app_commands.Group):
         await member.send(embed= embed)
         await inter.guild.get_channel(927060372127633458).send(embed= embed)
 
+    @app_commands.command()
+    @app_commands.checks.has_any_role("Founder", "President", "Director")
+    async def unban(self, inter: discord.interactions.Interaction, user: discord.User = None, memberId: str = None):
+        user = user or bot.get_user(int(memberId))
+
+        try:
+            await inter.guild.unban(user= user)
+        except discord.NotFound:
+            raise Exception("User was not found in the ban list.")
+        except Exception:
+            raise Exception("Unknown error occurred.")
+
+
+        embed = discord.Embed(title= "Unban", color= discord.Color.green())
+        embed.set_author(name= "Subject: {} ({})".format(user.name, user.id), icon_url= user.avatar.url)
+        embed.set_footer(text= "Moderator: {} ({})".format(inter.user.name, inter.user.id), icon_url= inter.user.avatar.url)
+
+        await inter.response.send_message(embed= embed)
+        await inter.guild.get_channel(927060372127633458).send(embed= embed)
+
 bot.tree.add_command(moderation())
