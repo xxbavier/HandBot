@@ -109,8 +109,8 @@ class moderation(app_commands.Group):
 
     @app_commands.command()
     @app_commands.checks.has_any_role("Founder", "President", "Director")
-    async def unban(self, inter: discord.interactions.Interaction, user: discord.User = None, memberId: str = None):
-        user = user or bot.get_user(int(memberId))
+    async def unban(self, inter: discord.interactions.Interaction, user: discord.User = None, member_id: str = None):
+        user = user or bot.get_user(int(member_id))
 
         try:
             await inter.guild.unban(user= user)
