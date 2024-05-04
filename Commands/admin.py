@@ -1,6 +1,6 @@
 import discord
 from discord import app_commands, ui
-from settings import bot, htl_servers, leaderboard_message_id
+from settings import bot, htl_servers
 from Modules.database import databases
 from Modules.elo_system import new_rating, get_estimated_score, get_team_average
 import roblox
@@ -22,281 +22,146 @@ def get_game(key) -> list:
 @app_commands.guild_only()
 class admin(app_commands.Group):
     @app_commands.command()
-    @app_commands.checks.has_any_role("Founder", "President")
+    @app_commands.checks.has_permissions(administrator=True)
     async def information(self, inter: discord.Interaction):
-        embed = discord.Embed(title= "Handball: The League", description= "Welcome to *Handball: The League!*")
-        embed.set_thumbnail(url="https://media.discordapp.net/attachments/914661528593125387/1072928961329369158/htl.png?width=818&height=894")
+        embed = discord.Embed(title= "National Handball Association", description= "Welcome to the *National Handball Association*.")
+        embed.set_thumbnail(url="https://media.discordapp.net/attachments/1207149176643657758/1208561490400116756/NHA.png?ex=65e3bb99&is=65d14699&hm=c033007fd5d3da8680749b8c00e7d986b751cf1fd114da7401bfe4b4b06987b7&=&format=webp&quality=lossless&width=700&height=700")
 
-        class informationView(ui.View):
-            @ui.select(options=[
+        informationView = ui.View()
+        
+        select = ui.Select(options=[
                 discord.SelectOption(label= "Introduction", emoji= "👋", value= "Introduction"),
                 discord.SelectOption(label= "Getting Started", emoji= "🔰", value= "Getting Started"),
-                discord.SelectOption(label= "League Invite", emoji= "🌐", value= "League Invite"),
+                discord.SelectOption(label= "League Socials", emoji= "🌐", value= "League Socials"),
                 discord.SelectOption(label= "Game", emoji= "🕹️", value= "Game"),
                 discord.SelectOption(label= "Rulebook", emoji= "📜", value= "Rulebook"),
                 discord.SelectOption(label= "Roles", emoji= "📒", value= "Roles"),
                 discord.SelectOption(label= "Apply", emoji= "💎", value= "Applications"),
             ], custom_id= "Information", placeholder= "Select module you'd like to read.")
-            async def callback():
-                pass
+
+        informationView.add_item(select)
+
+        await inter.channel.send(embed= embed, view= informationView)
+        await inter.response.send_message(content="*The information embed has been sent.*", ephemeral= True)
+
+@bot.event
+async def on_interaction(inter: discord.Interaction):
+    data = inter.data
+
+    try:
+        id = data["custom_id"]
         
-        await inter.guild.get_channel(914661528593125387).send(embed= embed, view= informationView())
+        if data["component_type"] != 2:
+            values = data["values"]
+    except Exception:
+        return
 
-        account_embed = discord.Embed(title= "HTL Accounts", description= "Click the button below to create an HTL Account!\n\nHTL Accounts...\n- Allow you to be signed to teams\n- Tracks your HTL career\n- And more!\n\n**You need to have verified through DoubleCounter before you can create an HTL Account.**")
-        htl_account = ui.View()
-        
-        htl_account.add_item(ui.Button(label= "Create an Account", style= discord.ButtonStyle.blurple, custom_id= "start htl"))
-                
-            
-        await inter.guild.get_channel(914661528593125387).send(embed= account_embed, view= htl_account)
-        await inter.response.send_message(content="*The information embed has been sent.*")
-        
-
-
-    @app_commands.command()
-    @app_commands.checks.has_any_role("Founder", "President", "Director")
-    @app_commands.autocomplete(winning_team= teams_autocomplete, losing_team= teams_autocomplete)
-    async def finalize_game(self, inter: discord.Interaction, winning_team: str, losing_team: str, game_id: str):
-        winning_team = inter.guild.get_role(int(winning_team))
-        losing_team = inter.guild.get_role(int(losing_team))
-
-        game = get_game(game_id)
-
-        player_ids = game["PlayerIds"]
-        stats = game["Stats"]
-        total_stats = {
-            "Players": {},
-            "Winning Team": 0,
-            "Losing Team": 0
-        }
-
-        for category in stats.values():
-            for id, subcategory in category.items():
-                for name, value in subcategory.items():
-                    if name == "Misses":
-                        continue
-
-                    try:
-                        total_stats["Players"][int(id)] += value
-                    except KeyError:
-                        total_stats["Players"][int(id)] = value
-
-        accounts = {"Winning Team": [], "Losing Team": []}
-        active_accounts = {"Winning Team": [], "Losing Team": []}
-
-        elo_lists = {
-            "Winning Team": [],
-            "Losing Team": []
-        }
-
-        for member in winning_team.members:
-            account = databases["Player Data"]["Careers"].find_one({"DiscordId": member.id})
-
-            if account:
-                accounts["Winning Team"].append(account)
-                if account["RobloxId"] in player_ids:
-                    active_accounts["Winning Team"].append(account)
-                    elo_lists["Winning Team"].append(account["Elo"])
-
-                    total_stats["Winning Team"] += total_stats["Players"][account["RobloxId"]]
-
-        for member in losing_team.members:
-            account = databases["Player Data"]["Careers"].find_one({"DiscordId": member.id})
-
-            if account:
-                accounts["Losing Team"].append(account)
-                if account["RobloxId"] in player_ids:
-                    active_accounts["Losing Team"].append(account)
-                    elo_lists["Losing Team"].append(account["Elo"])
-
-                    total_stats["Losing Team"] += total_stats["Players"][account["RobloxId"]]
-
-        affected = []
-        updated_accounts = {
-            "Winning Team": [],
-            "Losing Team": []
-        }
-
-        team_elos = {
-            "Winning Team": get_team_average(active_accounts["Winning Team"]),
-            "Losing Team": get_team_average(active_accounts["Losing Team"])
-        }
-
-        for account in active_accounts["Winning Team"]:
-            new_elo = round(new_rating(account["Elo"], team_elos["Losing Team"], True, total_stats["Players"][account["RobloxId"]], total_stats["Winning Team"]))
-            affected.insert(0, {"Account": account, "OldElo": account["Elo"], "NewElo": new_elo, "Increase": True})
-
-            new_account = account.copy()
-            new_account["Elo"] = new_elo
-            updated_accounts["Winning Team"].append(new_account)
-
-            
-        for account in active_accounts["Losing Team"]:
-            new_elo = round(new_rating(account["Elo"], team_elos["Winning Team"], False, total_stats["Players"][account["RobloxId"]], total_stats["Losing Team"]))
-            affected.append({"Account": account, "OldElo": account["Elo"], "NewElo": new_elo, "Increase": False})
-
-            new_account = account.copy()
-            new_account["Elo"] = new_elo
-            updated_accounts["Losing Team"].append(new_account)
-
-        strings = {
-            "Decrease": [],
-            "Increase": []
-        }
-
-        for data in affected:
-            roblox_username = await roclient.get_user(data["Account"]["RobloxId"])
-            roblox_username = roblox_username.name
-            discord_mention = bot.get_guild(htl_servers["League"]).get_member(data["Account"]["DiscordId"]).mention
-
-            old_elo = data["OldElo"]
-            new_elo = data["NewElo"]
-
-            emoji = "<:elo_increase:1091348986813743336>"
-
-            if not data["Increase"]:
-                emoji = "<:elo_decrease:1091348984838242394>"
-
-            if not data["Increase"]:
-                strings["Decrease"].append(f"**{discord_mention}** ``{roblox_username}`` | *{old_elo}* {emoji} *{new_elo}*")
-            else:
-                strings["Increase"].append(f"**{discord_mention}** ``{roblox_username}`` | *{old_elo}* {emoji} *{new_elo}*")
-        
-        elo_changes = discord.Embed(title= "Elo Changes", description= "The following Elos will be modified.")
-        elo_changes.add_field(name= "``Players (Increases)``", value= "> " + "\n> ".join(strings["Increase"]), inline= False)
-        elo_changes.add_field(name= "``Players (Decreases)``", value= "> " + "\n> ".join(strings["Decrease"]), inline= False)
-
-        team_strings = []
-        old_winning_team_elo = round(team_elos["Winning Team"])
-        old_losing_team_elo = round(team_elos["Losing Team"])
-        new_winning_team_elo = round(get_team_average(updated_accounts["Winning Team"]))
-        new_losing_team_elo = round(get_team_average(updated_accounts["Losing Team"]))
-        team_strings.append(f"**{winning_team.mention}** ``{winning_team.name}`` | *{old_winning_team_elo}* <:elo_increase:1091348986813743336> *{new_winning_team_elo}*")
-        team_strings.append(f"**{losing_team.mention}** ``{losing_team.name}`` | *{old_losing_team_elo}* <:elo_decrease:1091348984838242394> *{new_losing_team_elo}*")
-        
-        elo_changes.add_field(name= "``Teams``", value= "> " + "\n> ".join(team_strings), inline= False)
-
-        confirm = ui.View()
-        
-        class confirmButton(ui.Button):
-            async def callback(self, interaction: discord.Interaction):
-                if interaction.user.id != inter.user.id:
-                    return
-
-                for account in updated_accounts["Winning Team"]:
-                    databases["Player Data"]["Careers"].update_one({"DiscordId": account["DiscordId"]}, {"$set": {"Elo": account["Elo"]}})
-
-                for account in updated_accounts["Losing Team"]:
-                    databases["Player Data"]["Careers"].update_one({"DiscordId": account["DiscordId"]}, {"$set": {"Elo": account["Elo"]}})
-
-                elo_changes.description = ""
-
-                await interaction.guild.get_channel(1093669850104221706).send(embed= elo_changes)
-                await interaction.message.edit(embed= elo_changes, view= None)
-                await interaction.response.send_message("***Changes confirmed!***", ephemeral= True)
-
-                
-        class cancelButton(ui.Button):
-            async def callback(self, interaction: discord.Interaction):
-                if interaction.user.id != inter.user.id:
-                    return
-
-                await interaction.message.delete()
-                
-        confirm.add_item(confirmButton(label= "Confirm", style= discord.ButtonStyle.green))
-        confirm.add_item(cancelButton(label= "Cancel", style= discord.ButtonStyle.red))
-
-        await inter.response.send_message(embed= elo_changes, view = confirm)
-        await bot.tree.get_command("admin").get_command("leaderboard").get_command("update").callback(self= None, inter= inter)
-
-    leaderboard = app_commands.Group(name= "leaderboard", description= "Change the HTL leaderboard")
     
-    @leaderboard.command()
-    @app_commands.checks.has_any_role("Founder", "President", "Director")
-    async def create(self, inter: discord.Interaction):
-        lb = discord.Embed(title= "HTL Leaderboard")
+    if id == "Information":
+        embed = discord.Embed(title= values[0])
+        view = None
 
-        teams = {}
+        if values[0] == "Introduction":
+            embed.description = "*Welcome to the National Handball Association. NHA is a NA-based league that was established in December of 2023.*\n\n**This channel is where you can find information about the league.**"
 
-        for role in inter.guild.roles:
-            if isTeamRole(inter.guild.id, role.id):
-                accounts = []
+            view = ui.View()
 
-                for member in role.members:
-                    profile = databases["Player Data"]["Careers"].find_one({"DiscordId": member.id})
+            view.add_item(ui.Button(label= "Handball Positions", custom_id= "Positions", style= discord.ButtonStyle.blurple))
 
-                    if profile:
-                        accounts.append(profile)
-                try:
-                    teams[role.id] = get_team_average(accounts)
-                except Exception:
-                    continue
+        elif values[0] == "Getting Started":
+            embed.description = "*Upon joining the league, there are a few ways for new players to involve themselves in the league.*"
 
-        teams = sorted(teams.items(), reverse= True, key=lambda x:x[1])
-        strings = []
+            class gettingStarted(ui.View):
+                @ui.select(options=[
+                    discord.SelectOption(label= "Pickups", emoji="🥅", value = "Pickups"),
+                    discord.SelectOption(label= "Free Agency", emoji="🔰", value = "Free Agency"),
+                    discord.SelectOption(label= "Chat", emoji="💬", value = "Chat"),
+                ], placeholder= "Find ways to get started.", custom_id= "Getting Started")
+                async def callback():
+                    pass
 
-        pos = 0
-        for team in teams:
-            pos += 1
-            team_id = team[0]
-            team_elo = team[1]
-            team_elo = round(team_elo)
+            view = gettingStarted()
+                
+        elif values[0] == "League Socials":
+            invite = await inter.channel.create_invite(
+                reason= "Information channel",
+                max_age=0,
+                max_uses=0,
+                unique=False
+            )
 
-            team_role = inter.guild.get_role(team_id)
+            embed.add_field(name= "``Permanent Invite``", value= invite.url, inline= False)
+            
+            vanity = inter.guild.vanity_url
 
-            string = f"**#{pos}** ``{team_elo}`` | **{team_role.name}** {team_role.mention}"
-            strings.append(string)
+            if not vanity:
+                vanity = "NHA does not have a vanity invite at the moment."
 
-        lb.add_field(name= "``Teams``", value= "> " + "\n> ".join(strings), inline= False)
+            embed.add_field(name= "``Vanity Invite``", value= vanity, inline= False)
 
-        t = round(time.time())
+            view = ui.View()
 
-        lb.add_field(name= "``Last Updated``", value= f"> <t:{t}>", inline= False)
+            youtube = ui.Button(label= "YouTube Page", url= "https://www.youtube.com/@HandballTheLeague")
+            group = ui.Button(label= "League Group Page", url= "https://www.roblox.com/groups/10195697/Handball-The-League")
 
-        await inter.guild.get_channel(1024370000968044545).send(embed= lb)
-        await inter.response.send_message(content= "Leaderboard has been created!", ephemeral= True)
+            view.add_item(youtube)
+            view.add_item(group)
 
-    @leaderboard.command()
-    @app_commands.checks.has_any_role("Founder", "President", "Director")
-    async def update(self, inter: discord.Interaction, message: str= str(leaderboard_message_id)):
-        msg = await inter.guild.get_channel(1024370000968044545).fetch_message(int(message))
+        elif values[0] == "Game":
+            embed.description = "Click the buttons to access the Game sites."
 
-        lb = discord.Embed(title= "HTL Leaderboard")
+            view = ui.View()
 
-        teams = {}
+            game = ui.Button(label= "Game Page", url= "https://www.roblox.com/games/5498056786", style= discord.ButtonStyle.gray)
+            game_discord = ui.Button(label= "Game Discord", url= "https://discord.gg/VUhYsAtKPU", style= discord.ButtonStyle.gray)
+            
+            view.add_item(game)
+            view.add_item(game_discord)
 
-        for role in inter.guild.roles:
-            if isTeamRole(inter.guild.id, role.id):
-                accounts = getTeamAccounts(role)
+        elif values[0] == "Rulebook":
+            embed.description = "Click the button to access the rulebook."
 
-                try:
-                    teams[role.id] = get_team_average(accounts)
-                except Exception:
-                    continue
+            view = ui.View()
+            
+            rulebook = ui.Button(label= "Rulebook", url= "https://docs.google.com/document/d/1blgWUD2JOHCZrDZ_VmUtJwNbDsDhOW9H-1YslFCPBjg/edit#heading=h.n29msmna3upk")
 
-        teams = sorted(teams.items(), reverse= True, key=lambda x:x[1])
-        strings = []
+            view.add_item(rulebook)
 
-        pos = 0
-        for team in teams:
-            pos += 1
-            team_id = team[0]
-            team_elo = team[1]
-            team_elo = round(team_elo)
+        elif values[0] == "Roles":
+            view = ui.View()
 
-            team_role = inter.guild.get_role(team_id)
+            roles = ui.Button(custom_id= "Roles Channel", url= "https://discord.com/channels/1189116739649290270/1189639835263193130")
 
-            string = f"**#{pos}** ``{team_elo}`` | **{team_role.name}** {team_role.mention}"
-            strings.append(string)
+            view.add_item(roles)
+        
+        elif values[0] == "Applications":
+            embed.description = "*This module is not yet finished.*"
 
-        lb.add_field(name= "``Teams``", value= "> " + "\n> ".join(strings), inline= False)
+            #@ui.select()
+        
+        await inter.response.send_message(embed= embed, ephemeral= True, view= view)
+    
+    elif id == "Getting Started":
+        embed = discord.Embed(title = values[0])
+        view = None
 
-        t = round(time.time())
+        if values[0] == "Pickups":
+            embed.description = "**Pickup games are mock games ran by the community.**\n\n> *Pickups are a great way to get yourself involved in HTL and to get others to notice your skill.*"
+        elif values[0] == "Free Agency":
+            embed.description = "**Teams are often looking for new players for their rosters and like to scout new players.**\n\n> *You can get noticed by posting a Free Agency advertisement in <#1093676364504256612> or by responding to posts made by Team Coaches in <#1093701368902066236>.*"
+        elif values[0] == "Chat":
+            embed.description = "**Talking to other members in the league and forming connections is a good way to get involved in the league.**\n\n> *Some teams tend to tryout/recruit members that are active in the community; in addition, forming connections is a good way to form a team if a member is interested in owning a team.*"
 
-        lb.add_field(name= "``Last Updated``", value= f"> <t:{t}>", inline= False)
+        await inter.response.send_message(embed= embed, ephemeral= True, view=view)
 
-        await msg.edit(embed= lb)
+    elif id == "Positions":
+        embed = discord.Embed(title="Handball Positions", description="This is a list of officially recognized positions.", color=discord.Color.purple())
+        embed.add_field(name= ":one: ``Striker``", value="Strikers focus on scoring the points. Strikers can usually be found on the opponent's side of the court.", inline= False)
+        embed.add_field(name= ":two: ``Midfielder``", value= "Midfielders focus on moving the ball around and providing support to both defenders and strikers. Midfielders can usually be found near the middle of the court.", inline=False)
+        embed.add_field(name= ":three: ``Defender``", value= "Defenders focus on stopping the opposing team's offense. Defender can usually be found on their own side of the court.", inline=False)
+        embed.add_field(name= ":four: ``Goalkeeper``", value="Goalkeepers focus on saving shot attempts made by the opposing team. Goalkeepers can usually be found inside of the smaller ring circling the goal. A team can only have 1 GK at time.", inline=False)
 
+        await inter.response.send_message(embed= embed, ephemeral= True)
 
 
 bot.tree.add_command(admin())

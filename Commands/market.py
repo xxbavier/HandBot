@@ -14,6 +14,23 @@ def transactionEmbed(emoji, team_role):
 
 @app_commands.guild_only()
 class market(app_commands.Group, name= "market", description= "Where coaches can manage their team."):
+    @app_commands.command()
+    async def join(self, inter: discord.interactions.Interaction):
+        embed = discord.Embed(title= "Free Agency")
+        
+        view = ui.View()
+
+        positions = ui.Select(options=[
+            discord.SelectOption(label= "Striker", value= "Striker"),
+            discord.SelectOption(label= "Midfield", value= "Midfield"),
+            discord.SelectOption(label= "Defender", value= "Defender"),
+            discord.SelectOption(label= "Goalkeeper", value= "Goalkeeper")
+        ], max_values= 4, placeholder= "Select the position(s) you play.", custom_id= "Join Free Agency")
+
+        view.add_item(positions)
+
+        await inter.response.send_message(embed=embed, view= view, ephemeral= True)
+
     def isCoach(member) -> list[bool, discord.Role]:
         pass
 
@@ -22,38 +39,9 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
     @trades.command()
     @app_commands.checks.has_any_role("Team Owner", "General Manager")
     async def create(self, inter: discord.interactions.Interaction) -> None:
-        embed = discord.Embed()
+        pass
 
     contracts = app_commands.Group(name= "contracts", description="Manage contracts.")
-
-    @contracts.command()
-    @app_commands.checks.has_any_role("Team Owner", "General Manager")
-    async def offer(self, inter: discord.interactions.Interaction, member: discord.User) -> None:
-        pass
-
-    @contracts.command()
-    @app_commands.checks.has_any_role("Team Owner", "General Manager")
-    async def view(self, inter: discord.interactions.Interaction) -> None:
-        pass
-
-    def canPromotePlayer(self, inter: discord.interactions.Interaction):
-        valid = True
-
-        info = teamCheck(inter.user, inter.guild)
-        onTeam = info[0]
-        teamRole = info[1]
-
-        if onTeam:
-            coachCount = 0
-
-            for member in teamRole.members:
-                if inter.guild.get_role(coachRoles["GM"]) in member.roles:
-                    coachCount += 1
-
-            if coachCount >= 2:
-                valid = False
-        
-        return valid
 
     @app_commands.command(description="Promote a player to General Manager.")
     @app_commands.checks.has_any_role("Team Owner")
@@ -173,61 +161,6 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
             content= "***Check your Direct Messages with {} ({}).***".format(bot.user.mention, bot.user.name),
             ephemeral= True
         )
-
-    @app_commands.command(description="Demand a release from your team.")
-    @app_commands.check(teamCheckBool)
-    async def demand(self, inter: discord.interactions.Interaction, reason: str):
-        if not transactions_enabled:
-            raise Exception("Transactions are closed.")
-
-        author = inter.user
-        htl = bot.get_guild(htl_servers["League"])
-
-        team_info = teamCheck(author, htl)
-        coach_info = coachCheck(author, htl)
-
-        tick = int(time.time())
-        last_tick = None
-        
-        try:
-            cursor = databases['Player Data']["Demands"].find_one({'_id': author.id})
-
-            last_tick = cursor["PreviousDemand"]
-        except:
-            pass
-
-        if coach_info == 3 or not team_info[0]:
-            raise Exception("You must be on a valid team and not be a Team Owner to use this command.")
-
-        if last_tick:
-            if tick - last_tick <= 604800:
-                raise Exception("You are on cooldown! You can demand again in around {} days.".format(round((604800 - (tick - last_tick))/86400, 2)))
-
-        try:
-            databases["Player Data"]["Demands"].insert_one({'_id': author.id, "PreviousDemand": tick})
-        except:
-            databases["Player Data"]["Demands"].update_one({'_id': author.id}, {'$set': {"PreviousDemand": tick}})
-
-        await author.remove_roles(
-            team_info[1],
-            htl.get_role(917068674626646027) # HC
-        )
-
-        for e in htl.emojis:
-            if team_info[1].name.find(e.name) > -1:
-                break
-        
-        embed = transactionEmbed(e, team_info[1])
-        embed.add_field(name= "``Demanded a Release``", value= "{} ({})".format(author.mention, author.name), inline=False)
-
-        if reason:
-            embed.add_field(name= "``Reason``", value= reason, inline=False)
-
-        await htl.get_channel(917102767208816680).send(
-            embed= embed
-        )
-
-        await bot.tree.get_command("admin").get_command("leaderboard").get_command("update").callback(self= None, inter= inter)
 
     @app_commands.command(description="Remove players from your team's roster.")
     @app_commands.checks.has_any_role("Team Owner", "General Manager")
@@ -377,5 +310,34 @@ class market(app_commands.Group, name= "market", description= "Where coaches can
         )
 
         await bot.tree.get_command("admin").get_command("leaderboard").get_command("update").callback(self= None, inter= inter)
+
+@bot.event
+async def on_interaction(inter: discord.interactions.Interaction):
+    data = inter.data
+
+    try:
+        id = data["custom_id"]
+        
+        if data["component_type"] != 2:
+            values = data["values"]
+    except Exception:
+        return
+
+    if id == "Join Free Agency":
+        embed = discord.Embed(title= inter.user.name, color= discord.Color.blurple(), description= "A new player has entered the free agency.")
+        embed.add_field(name= "``Positions Played``", value= "- {}".format("\n- ".join(values)), inline= False)
+        
+
+        view = ui.View()
+        view.add_item("")
+
+        post = await bot.get_channel(1208951460268744785).send(embed= embed)
+
+        embed = discord.Embed(title= "Joined Free Agency", color= discord.Color.green())
+        view = ui.View()
+        view.add_item(ui.Button(label= "Free Agency Post", url= post.jump_url))
+
+        await inter.response.send_message(embed= embed, view= view, ephemeral= True)
+        
 
 bot.tree.add_command(market())
