@@ -1,167 +1,132 @@
-import discord
+import discord, pprint, requests, random, asyncio
 from discord import app_commands, ui
+from Modules import rover, database
 from settings import bot, htl_servers
-from Modules.database import databases
-from Modules.elo_system import new_rating, get_estimated_score, get_team_average
-import roblox
-import json
-from Commands.teams import teams_autocomplete
-from Modules.teamRoles import isTeamRole, getTeamAccounts
-from Modules.RobloxCloud import DataStores
-import time
-
-DataStoreApi = DataStores()
-
-roclient = roblox.Client()
-
-def get_game(key) -> list:
-    data = DataStoreApi.get_entry("HTL Stats", key)
-    data = json.loads(data.json())
-    return data
 
 @app_commands.guild_only()
 class admin(app_commands.Group):
     @app_commands.command()
     @app_commands.checks.has_permissions(administrator=True)
-    async def information(self, inter: discord.Interaction):
-        embed = discord.Embed(title= "National Handball Association", description= "Welcome to the *National Handball Association*.")
-        embed.set_thumbnail(url="https://media.discordapp.net/attachments/1207149176643657758/1208561490400116756/NHA.png?ex=65e3bb99&is=65d14699&hm=c033007fd5d3da8680749b8c00e7d986b751cf1fd114da7401bfe4b4b06987b7&=&format=webp&quality=lossless&width=700&height=700")
-
-        informationView = ui.View()
+    async def create_signup(self, inter: discord.Interaction, series: str):
+        embed = discord.Embed()
+        embed.title = "Player Sign-Up"
+        embed.description = "Press the button below if you are interested in playing this season."
         
-        select = ui.Select(options=[
-                discord.SelectOption(label= "Introduction", emoji= "👋", value= "Introduction"),
-                discord.SelectOption(label= "Getting Started", emoji= "🔰", value= "Getting Started"),
-                discord.SelectOption(label= "League Socials", emoji= "🌐", value= "League Socials"),
-                discord.SelectOption(label= "Game", emoji= "🕹️", value= "Game"),
-                discord.SelectOption(label= "Rulebook", emoji= "📜", value= "Rulebook"),
-                discord.SelectOption(label= "Roles", emoji= "📒", value= "Roles"),
-                discord.SelectOption(label= "Apply", emoji= "💎", value= "Applications"),
-            ], custom_id= "Information", placeholder= "Select module you'd like to read.")
+        view = ui.View()
 
-        informationView.add_item(select)
+        signup_button = ui.Button(label="Sign Up for Series", style= discord.ButtonStyle.blurple, custom_id="Sign Up,{}".format(series))
 
-        await inter.channel.send(embed= embed, view= informationView)
-        await inter.response.send_message(content="*The information embed has been sent.*", ephemeral= True)
+        view.add_item(signup_button)
+
+        await inter.channel.send(embed= embed, view= view)
+        await inter.response.send_message("*Sign up embed has been created in this channel.*", ephemeral= True)
+
+    @app_commands.command()
+    @app_commands.checks.has_permissions(administrator=True)
+    async def generate_teams(self, inter: discord.Interaction, series: str, size: int):
+        await inter.response.defer(ephemeral= False, thinking= True)
+
+        guild = bot.get_guild(htl_servers["League"])
+        category = discord.utils.get(bot.get_guild(htl_servers["League"]).categories, id= 1236742676666388531)
+        top_role = 1236763852259983460
+        bottom_role = 1236763921520787536
+
+        for channel in category.channels:
+            await channel.delete()
+
+        cursor = database.databases["Current Sign Up"][series].find()
+        data = list(cursor)
+                
+        team_count = len(data)//min(size, len(data))
+        teams = {}
+
+        for x in range(team_count):
+            team = []
+
+            for y in range(min(size, len(data))):
+                index = random.choice(list(range(0, len(data))))
+                player = data[index]
+                team.append(player)
+
+            teams["Team {}".format(x)] = team
+
+        embeds = []
+
+        top_role_pos = bot.get_guild(htl_servers["League"]).get_role(top_role).position
+
+        for name, value in teams.items():
+            embed = discord.Embed()
+            embed.title = name
+
+            color = discord.Colour.random()
+            
+            role = await guild.create_role(
+                name= name,
+                color= color,
+                reason= "Team generation.",
+                hoist= True
+            )
+
+            await guild.create_text_channel(
+                name=name,
+                reason= "Team generation.",
+                category= category,
+                overwrites={
+                    guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                    role: discord.PermissionOverwrite(read_messages=True)
+                }
+            )
+
+            string_list = []
+
+            for member in value:
+                user = bot.get_user(member["DiscordId"])
+                string_list.append("{} {}".format(user.name, user.mention))
+
+                await guild.get_member(user.id).add_roles(role)
+
+            embed.color = color
+            embed.description = "\n".join(string_list)
+
+            embeds.append(embed)
+
+        await bot.get_guild(htl_servers["League"]).get_role(bottom_role).edit(position= top_role_pos - len(teams))
+        await inter.edit_original_response(embeds= embeds)
 
 @bot.event
 async def on_interaction(inter: discord.Interaction):
-    data = inter.data
+    if inter.data.get("custom_id"):
+        inter_data = inter.data["custom_id"].split(",")
+        if inter_data[0] == "Sign Up":
+            series = inter_data[1]
 
-    try:
-        id = data["custom_id"]
-        
-        if data["component_type"] != 2:
-            values = data["values"]
-    except Exception:
-        return
+            data = rover.get_Roblox(inter.guild.id, inter.user.id)
 
-    
-    if id == "Information":
-        embed = discord.Embed(title= values[0])
-        view = None
+            try:
+                robloxId = data['robloxId']
+            except KeyError:
+                embed = discord.Embed(title="Error", description="There was an error when processing the command.", color=discord.Color.red())
+                embed.add_field(name= "``Error Description``", value= "*"+str("You are not verified through RoVer.")+"*")
 
-        if values[0] == "Introduction":
-            embed.description = "*Welcome to the National Handball Association. NHA is a NA-based league that was established in December of 2023.*\n\n**This channel is where you can find information about the league.**"
+                await inter.response.send_message(embed= embed, ephemeral=True)
+                return
 
-            view = ui.View()
+            result = database.databases["Current Sign Up"][series].find_one({"DiscordId": inter.user.id})
+            result = False
 
-            view.add_item(ui.Button(label= "Handball Positions", custom_id= "Positions", style= discord.ButtonStyle.blurple))
+            if not result:
+                database.databases["Current Sign Up"][series].insert_one({"DiscordId": inter.user.id, "RobloxId": robloxId})
 
-        elif values[0] == "Getting Started":
-            embed.description = "*Upon joining the league, there are a few ways for new players to involve themselves in the league.*"
+                embed = discord.Embed()
+                embed.title = "Success!"
+                embed.description = "*You have successfully signed up for the {} Series.*".format(series)
+                embed.color = discord.Colour.green()
+            else:
+                embed = discord.Embed()
+                embed.title = "Error"
+                embed.description = "*You have already signed up for the {} Series.*".format(series)
+                embed.color = discord.Colour.red()
 
-            class gettingStarted(ui.View):
-                @ui.select(options=[
-                    discord.SelectOption(label= "Pickups", emoji="🥅", value = "Pickups"),
-                    discord.SelectOption(label= "Free Agency", emoji="🔰", value = "Free Agency"),
-                    discord.SelectOption(label= "Chat", emoji="💬", value = "Chat"),
-                ], placeholder= "Find ways to get started.", custom_id= "Getting Started")
-                async def callback():
-                    pass
-
-            view = gettingStarted()
-                
-        elif values[0] == "League Socials":
-            invite = await inter.channel.create_invite(
-                reason= "Information channel",
-                max_age=0,
-                max_uses=0,
-                unique=False
-            )
-
-            embed.add_field(name= "``Permanent Invite``", value= invite.url, inline= False)
-            
-            vanity = inter.guild.vanity_url
-
-            if not vanity:
-                vanity = "NHA does not have a vanity invite at the moment."
-
-            embed.add_field(name= "``Vanity Invite``", value= vanity, inline= False)
-
-            view = ui.View()
-
-            youtube = ui.Button(label= "YouTube Page", url= "https://www.youtube.com/@HandballTheLeague")
-            group = ui.Button(label= "League Group Page", url= "https://www.roblox.com/groups/10195697/Handball-The-League")
-
-            view.add_item(youtube)
-            view.add_item(group)
-
-        elif values[0] == "Game":
-            embed.description = "Click the buttons to access the Game sites."
-
-            view = ui.View()
-
-            game = ui.Button(label= "Game Page", url= "https://www.roblox.com/games/5498056786", style= discord.ButtonStyle.gray)
-            game_discord = ui.Button(label= "Game Discord", url= "https://discord.gg/VUhYsAtKPU", style= discord.ButtonStyle.gray)
-            
-            view.add_item(game)
-            view.add_item(game_discord)
-
-        elif values[0] == "Rulebook":
-            embed.description = "Click the button to access the rulebook."
-
-            view = ui.View()
-            
-            rulebook = ui.Button(label= "Rulebook", url= "https://docs.google.com/document/d/1blgWUD2JOHCZrDZ_VmUtJwNbDsDhOW9H-1YslFCPBjg/edit#heading=h.n29msmna3upk")
-
-            view.add_item(rulebook)
-
-        elif values[0] == "Roles":
-            view = ui.View()
-
-            roles = ui.Button(custom_id= "Roles Channel", url= "https://discord.com/channels/1189116739649290270/1189639835263193130")
-
-            view.add_item(roles)
-        
-        elif values[0] == "Applications":
-            embed.description = "*This module is not yet finished.*"
-
-            #@ui.select()
-        
-        await inter.response.send_message(embed= embed, ephemeral= True, view= view)
-    
-    elif id == "Getting Started":
-        embed = discord.Embed(title = values[0])
-        view = None
-
-        if values[0] == "Pickups":
-            embed.description = "**Pickup games are mock games ran by the community.**\n\n> *Pickups are a great way to get yourself involved in HTL and to get others to notice your skill.*"
-        elif values[0] == "Free Agency":
-            embed.description = "**Teams are often looking for new players for their rosters and like to scout new players.**\n\n> *You can get noticed by posting a Free Agency advertisement in <#1093676364504256612> or by responding to posts made by Team Coaches in <#1093701368902066236>.*"
-        elif values[0] == "Chat":
-            embed.description = "**Talking to other members in the league and forming connections is a good way to get involved in the league.**\n\n> *Some teams tend to tryout/recruit members that are active in the community; in addition, forming connections is a good way to form a team if a member is interested in owning a team.*"
-
-        await inter.response.send_message(embed= embed, ephemeral= True, view=view)
-
-    elif id == "Positions":
-        embed = discord.Embed(title="Handball Positions", description="This is a list of officially recognized positions.", color=discord.Color.purple())
-        embed.add_field(name= ":one: ``Striker``", value="Strikers focus on scoring the points. Strikers can usually be found on the opponent's side of the court.", inline= False)
-        embed.add_field(name= ":two: ``Midfielder``", value= "Midfielders focus on moving the ball around and providing support to both defenders and strikers. Midfielders can usually be found near the middle of the court.", inline=False)
-        embed.add_field(name= ":three: ``Defender``", value= "Defenders focus on stopping the opposing team's offense. Defender can usually be found on their own side of the court.", inline=False)
-        embed.add_field(name= ":four: ``Goalkeeper``", value="Goalkeepers focus on saving shot attempts made by the opposing team. Goalkeepers can usually be found inside of the smaller ring circling the goal. A team can only have 1 GK at time.", inline=False)
-
-        await inter.response.send_message(embed= embed, ephemeral= True)
-
+            await inter.response.send_message(embed= embed, ephemeral= True)
 
 bot.tree.add_command(admin())

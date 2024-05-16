@@ -19,8 +19,6 @@ except ConnectionFailure:
     print("MongoDB server is not available.")
 
 databases = {
-    "Player Data": mongoClient["Player_Data"],
-    "Contracts": mongoClient["Contracts"],
-    "Demands": mongoClient["Demands"],
-    "Season Info": mongoClient["SeasonInfo"]
+    "Season Info": mongoClient["SeasonInfo"],
+    "Current Sign Up": mongoClient["Sign_Up"],
 }
