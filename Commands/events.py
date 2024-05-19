@@ -9,7 +9,7 @@ from settings import bot
 @app_commands.guild_only()
 class events(app_commands.Group):
     @app_commands.command()
-    @app_commands.checks.has_role("Event Host")
+    @app_commands.checks.has_role("Community")
     async def pickup(self, inter: discord.Interaction):
         class pickupMaker(ui.Modal):
             private_server_url = ui.TextInput(label= "Please enter your HBA Private Server link.", placeholder= "Paste Private Server link here.")

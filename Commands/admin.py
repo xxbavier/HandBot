@@ -44,6 +44,27 @@ class admin(app_commands.Group):
         await inter.channel.send(embed= embed, view= informationView)
         await inter.response.send_message(content="*The information embed has been sent.*", ephemeral= True)
 
+    @app_commands.command()
+    @app_commands.checks.has_permissions(moderate_members=True)
+    async def role(self, inter: discord.Interaction, member: discord.Member, role: discord.Role):
+        if role in member.roles:
+            # Member already has the role, remove it
+            await member.remove_roles(role, reason= "Removed by {}.".format(inter.user.name))
+
+            embed = discord.Embed()
+            embed.title = "Removed Role"
+            embed.description = "``{}`` role has been removed from ``{}``.".format(role.name, member.name)
+        else:
+            # Member doesn't have the role, assign it
+            await member.add_roles(role, reason= "Added by {}.".format(inter.user.name))
+
+            embed = discord.Embed()
+            embed.title = "Added Role"
+            embed.description = "``{}`` role has been added to ``{}``.".format(role.name, member.name)
+        
+        await inter.response.send_message(embed= embed)
+
+
 @bot.event
 async def on_interaction(inter: discord.Interaction):
     data = inter.data
