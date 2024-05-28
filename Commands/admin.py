@@ -45,7 +45,7 @@ class admin(app_commands.Group):
         await inter.response.send_message(content="*The information embed has been sent.*", ephemeral= True)
 
     @app_commands.command()
-    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(manage_roles=True)
     async def role(self, inter: discord.Interaction, member: discord.Member, role: discord.Role):
         if role in member.roles:
             # Member already has the role, remove it

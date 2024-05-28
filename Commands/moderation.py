@@ -6,7 +6,7 @@ from settings import bot
 @app_commands.guild_only()
 class moderation(app_commands.Group):
     @app_commands.command()
-    @app_commands.checks.has_any_role("Founder", "President", "Director", "Executive Board", "Moderation")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def purge(self, inter: discord.Interaction, count: int, member: discord.Member = None):
         count = min(count, 100)
         
@@ -25,11 +25,11 @@ class moderation(app_commands.Group):
         await inter.response.send_message(embed=embed, delete_after=2)
         embed.add_field("``Channel``", value= f"<#{inter.channel.id}>")
 
-        await inter.guild.get_channel(927060372127633458).send(embed= embed)
+        await inter.guild.get_channel(1244849165612093501).send(embed= embed)
 
 
     @app_commands.command()
-    @app_commands.checks.has_any_role("Founder", "President", "Director", "Executive Board", "Moderation")
+    @app_commands.checks.has_permissions(moderate_members=True)
     async def mute(self, inter: discord.interactions.Interaction, member: discord.Member, reason: str, minutes: int = 30, hours: int = 0, days: int = 0, weeks: int = 0):
         if inter.user.top_role.position <= member.top_role.position:
             raise Exception("The member you tried muting has a higher role than you.")
@@ -51,10 +51,10 @@ class moderation(app_commands.Group):
 
         await inter.response.send_message(embed= embed)
         await member.send(embed= embed)
-        await inter.guild.get_channel(927060372127633458).send(embed= embed)
+        await inter.guild.get_channel(1244849165612093501).send(embed= embed)
     
     @app_commands.command()
-    @app_commands.checks.has_any_role("Founder", "President", "Director", "Executive Board", "Moderation")
+    @app_commands.checks.has_permissions(moderate_members=True)
     async def unmute(self, inter: discord.interactions.Interaction, member: discord.Member, reason: str):
         if inter.user.top_role.position <= member.top_role.position:
             raise Exception("The member you tried unmuting has a higher role than you.")
@@ -71,10 +71,10 @@ class moderation(app_commands.Group):
 
         await inter.response.send_message(embed= embed)
         await member.send(embed= embed)
-        await inter.guild.get_channel(927060372127633458).send(embed= embed)
+        await inter.guild.get_channel(1244849165612093501).send(embed= embed)
 
     @app_commands.command()
-    @app_commands.checks.has_any_role("Founder", "President", "Director")
+    @app_commands.checks.has_permissions(kick_members=True)
     async def kick(self, inter: discord.interactions.Interaction, member: discord.Member, reason: str):
         if inter.user.top_role.position <= member.top_role.position:
             raise Exception("The member you tried kicking has a higher role than you.")
@@ -88,10 +88,10 @@ class moderation(app_commands.Group):
 
         await inter.response.send_message(embed= embed)
         await member.send(embed= embed)
-        await inter.guild.get_channel(927060372127633458).send(embed= embed)
+        await inter.guild.get_channel(1244849165612093501).send(embed= embed)
 
     @app_commands.command()
-    @app_commands.checks.has_any_role("Founder", "President", "Director")
+    @app_commands.checks.has_permissions(ban_members=True)
     async def ban(self, inter: discord.interactions.Interaction, member: discord.Member, reason: str):
         if inter.user.top_role.position <= member.top_role.position:
             raise Exception("The member you tried banning has a higher role than you.")
@@ -105,10 +105,10 @@ class moderation(app_commands.Group):
 
         await inter.response.send_message(embed= embed)
         await member.send(embed= embed)
-        await inter.guild.get_channel(927060372127633458).send(embed= embed)
+        await inter.guild.get_channel(1244849165612093501).send(embed= embed)
 
     @app_commands.command()
-    @app_commands.checks.has_any_role("Founder", "President", "Director")
+    @app_commands.checks.has_permissions(administrator=True)
     async def unban(self, inter: discord.interactions.Interaction, user: discord.User = None, member_id: str = None):
         user = user or bot.get_user(int(member_id))
 
@@ -125,6 +125,6 @@ class moderation(app_commands.Group):
         embed.set_footer(text= "Moderator: {} ({})".format(inter.user.name, inter.user.id), icon_url= inter.user.avatar.url)
 
         await inter.response.send_message(embed= embed)
-        await inter.guild.get_channel(927060372127633458).send(embed= embed)
+        await inter.guild.get_channel(1244849165612093501).send(embed= embed)
 
 bot.tree.add_command(moderation())
