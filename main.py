@@ -101,11 +101,21 @@ async def on_message(msg: discord.Message):
 
 @bot.event
 async def on_member_join(member: discord.Member):
-    await member.guild.get_channel(1073647165613809715).send(content="<:htlg:1073648808845647912> | **{} has joined the server.** ``Members: {}``".format(member.mention, member.guild.member_count))
+    roles = [
+        1209253356829151272,
+        1192374103609454683,
+        1192374441934602340,
+        1189126244743262278,
+        1241443258500907139,
+        1192373637173477437
+    ]
+
+    await member.add_roles([htl_servers["League"].get_role(role) for role in roles])
+    await member.guild.get_channel(1189275682639990924).send(content="<:Green:1209279977883836467> | **{} has joined the server.** ``Members: {}``".format(member.mention, member.guild.member_count))
 
 @bot.event
 async def on_raw_member_remove(member: discord.RawMemberRemoveEvent):
-    await bot.get_guild(member.guild_id).get_channel(1073647165613809715).send(content="<:htlr:1073648809873260707> | *{}#{} has left the server.*".format(member.user.name, member.user.discriminator))
+    await bot.get_guild(member.guild_id).get_channel(1189275682639990924).send(content="<:Red:1209279976524877884> | *{}#{} has left the server.*".format(member.user.name, member.user.discriminator))
 
 @bot.event
 async def on_member_update(before: discord.Member, after: discord.Member):
