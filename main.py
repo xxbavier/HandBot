@@ -110,7 +110,7 @@ async def on_member_join(member: discord.Member):
         1192373637173477437
     ]
 
-    await member.add_roles([htl_servers["League"].get_role(role) for role in roles])
+    await member.add_roles([bot.get_guild(htl_servers["League"]).get_role(role) for role in roles])
     await member.guild.get_channel(1189275682639990924).send(content="<:Green:1209279977883836467> | **{} has joined the server.** ``Members: {}``".format(member.mention, member.guild.member_count))
 
 @bot.event
