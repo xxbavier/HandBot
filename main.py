@@ -70,19 +70,16 @@ randomMsg = []
 
 @bot.event
 async def on_message(msg: discord.Message):
-    '''if msg.channel == msg.guild.get_channel(917049598059618405):
-        global randomMsg
-        global msgLength
-
-        word = random.choice(msg.content.split(" "))
-        randomMsg.append(word)
-
-        if len(randomMsg) >= msgLength:
-            message = " ".join(randomMsg)
-            message = message.lower().capitalize()
-            randomMsg = []
-            await msg.guild.get_channel(917049598059618405).send(content=message)
-            msgLength = random.randint(1,100)'''
+    if len(msg.mentions) > 0:
+        includes_owner = False
+        
+        for x in msg.mentions:
+            if x in msg.guild.get_role(1189117814888472627).members:
+                includes_owner = True
+                break
+        
+        if includes_owner:
+            await msg.reply("why we pinging the owner eh?")
 
     if(msg.channel.id == 917103851092476074):
         if (msg.content.startswith('<:htl_twitter:951619979252482088>')):
