@@ -70,7 +70,7 @@ randomMsg = []
 
 @bot.event
 async def on_message(msg: discord.Message):
-    if len(msg.mentions) > 0:
+    if len(msg.mentions) > 0 and msg.author != bot.user:
         includes_owner = False
         
         for x in msg.mentions:
