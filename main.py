@@ -70,17 +70,6 @@ randomMsg = []
 
 @bot.event
 async def on_message(msg: discord.Message):
-    if len(msg.mentions) > 0 and msg.author != bot.user:
-        includes_owner = False
-        
-        for x in msg.mentions:
-            if x in msg.guild.get_role(1189117814888472627).members:
-                includes_owner = True
-                break
-        
-        if includes_owner:
-            await msg.reply("why we pinging the owner eh?")
-
     if(msg.channel.id == 917103851092476074):
         if (msg.content.startswith('<:htl_twitter:951619979252482088>')):
             if teamCheck(msg.author, msg.guild)[1]:
