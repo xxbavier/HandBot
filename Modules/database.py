@@ -22,5 +22,6 @@ databases = {
     "Player Data": mongoClient["Player_Data"],
     "Contracts": mongoClient["Contracts"],
     "Demands": mongoClient["Demands"],
-    "Season Info": mongoClient["SeasonInfo"]
+    "Season Info": mongoClient["SeasonInfo"],
+    "Subscriptions": mongoClient["Subscriptions"]
 }
