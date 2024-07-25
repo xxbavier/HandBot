@@ -9,5 +9,3 @@ team_cap = 15
 htl_servers = {
     "League": 1189116739649290270
 }
-
-bot = commands.Bot(command_prefix= "?", intents=discord.Intents.all(), application_id= 885266060796899329)
