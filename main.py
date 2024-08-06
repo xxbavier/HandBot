@@ -27,7 +27,8 @@ roClient = roblox.Client()
 # Load Extensions
 extensions = [
     "Utils.member_setup",
-    "Utils.subscriptions"
+    "Utils.subscriptions",
+   # "Utils.market"
 ]
 
 for ext in extensions:
@@ -58,7 +59,7 @@ async def on_ready():
 async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
     embed = discord.Embed(title="Error", description="There was an error processing the command.", color=discord.Color.red())
     embed.add_field(name= "``Error Description``", value= "*"+str(error)+"*")
-
+    
     await interaction.response.send_message(embed= embed, ephemeral=True)
 
 bot.tree.on_error = on_app_command_error
