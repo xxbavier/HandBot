@@ -48,7 +48,7 @@ That being said, here's a few suggestions that can help get you involved:
 
     @commands.Cog.listener()
     async def on_raw_member_remove(self, member: discord.RawMemberRemoveEvent):
-        await self.bot.get_guild(member.guild_id).get_channel(1189275682639990924).send(content="<:Red:1398092453416009912> | *{}#{} has left the server.*".format(member.user.name, member.user.discriminator))
+        await self.bot.get_guild(member.guild_id).get_channel(1375162934250049647).send(content="<:Red:1398092453416009912> | *{}#{} has left the server.*".format(member.user.name, member.user.discriminator))
     
 
 async def setup(bot: commands.Bot):
