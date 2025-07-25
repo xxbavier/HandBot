@@ -27,7 +27,7 @@ roClient = roblox.Client()
 # Load Extensions
 extensions = [
     "Utils.member_setup",
-    "Utils.subscriptions",
+   # "Utils.subscriptions",
    # "Utils.market"
 ]
 
