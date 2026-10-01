@@ -1,13 +1,32 @@
+import logging
+
 import discord
 from discord.ext import commands
-from discord import client
+
+from settings import WELCOME_INVITE
+
+logger = logging.getLogger(__name__)
+
 
 class MemberSetup(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    async def send_member_log(self, guild: discord.Guild, content: str) -> None:
+        channel_id = self.bot.settings.member_log_channel_id
+        channel = guild.get_channel(channel_id)
+        if channel is None:
+            logger.warning(
+                "Member log channel %s is unavailable in guild %s", channel_id, guild.id
+            )
+            return
+        try:
+            await channel.send(content=content)
+        except discord.HTTPException:
+            logger.warning("Could not send member log in guild %s", guild.id, exc_info=True)
+
     @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member):
+    async def on_member_join(self, member: discord.Member) -> None:
         embed = discord.Embed()
         embed.title = "Welcome to *Handball: The League*."
         embed.description = """Welcome to HTL, a league inspired by olympic handball!"""
@@ -29,27 +48,35 @@ That being said, here's a few suggestions that can help get you involved:
 2. Talk in <#1375158754529513484> and make friends.
 3. Use <#1380285480264007892> to market your skills so that Team Coaches can see them.""", inline= False)
         embed.add_field(name= "``Want to become a Team Owner?``", value= "You can become a Team Owner by filling in [this form](https://forms.gle/o56a5dyqYtSFu77m6).", inline=False)
-        embed.set_thumbnail(url=member.guild.icon)
+        if member.guild.icon is not None:
+            embed.set_thumbnail(url=member.guild.icon.url)
         embed.color = discord.Color.orange()
 
-        await member.send(content="https://discord.gg/vPz6zkATev", embed= embed)
+        try:
+            await member.send(content=WELCOME_INVITE, embed=embed)
+        except discord.HTTPException:
+            logger.warning("Could not send welcome DM to member %s", member.id, exc_info=True)
 
-        '''roles = [
-            1209253356829151272,
-            1192374103609454683,
-            1192374441934602340,
-            1189126244743262278,
-            1241443258500907139,
-            1192373637173477437
-        ]'''
-
-        #await member.add_roles(*[member.guild.get_role(role) for role in roles])
-        await member.guild.get_channel(1375162934250049647).send(content="<:Green:1398092411842072708> | **{} has joined the server.** ``Members: {}``".format(member.mention, member.guild.member_count))
+        await self.send_member_log(
+            member.guild,
+            content=(
+                "<:Green:1398092411842072708> | **{} has joined the server.** "
+                "``Members: {}``"
+            ).format(member.mention, member.guild.member_count),
+        )
 
     @commands.Cog.listener()
-    async def on_raw_member_remove(self, member: discord.RawMemberRemoveEvent):
-        await self.bot.get_guild(member.guild_id).get_channel(1375162934250049647).send(content="<:Red:1398092453416009912> | *{} has left the server.*".format(member.user.name))
-    
+    async def on_raw_member_remove(self, member: discord.RawMemberRemoveEvent) -> None:
+        guild = self.bot.get_guild(member.guild_id)
+        if guild is None:
+            logger.warning("Guild %s is unavailable for a member leave event", member.guild_id)
+            return
+        await self.send_member_log(
+            guild,
+            content="<:Red:1398092453416009912> | *{} has left the server.*".format(
+                member.user.name
+            ),
+        )
 
-async def setup(bot: commands.Bot):
+async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(MemberSetup(bot=bot))
