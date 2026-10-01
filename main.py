@@ -1,68 +1,24 @@
-import os, sys, traceback
-import discord
-from discord.ext import commands
-from discord import app_commands, ui
-import roblox
-import json
-from settings import htl_servers
-import asyncio
-import pprint
+"""Deployment entry point; importing this module does not start the bot."""
 
-# Load Secrets
-try:
-    token = os.environ['BOT_TOKEN']
-except KeyError:
-    with open("config.json", "r") as file:
-        data = json.load(file)
-        token = data["token"]
-        mongoLogIn = data["db_connection"]
+import logging
 
-token: str
-mongoLogIn: str
+from bot import HandBot
+from settings import ConfigurationError, load_settings
 
-# Initiate
-bot = commands.Bot(command_prefix= "?", intents=discord.Intents.all(), application_id= 885266060796899329)
-roClient = roblox.Client()
 
-# Load Extensions
-extensions = [
-    "Utils.member_setup",
-   # "Utils.subscriptions",
-   # "Utils.market"
-]
-
-for ext in extensions:
+def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     try:
-        asyncio.run(bot.load_extension(ext))
-    except Exception as e:
-        print(f'Failed to load extension {ext}.', file=sys.stderr)
-        traceback.print_exc()
+        settings = load_settings()
+    except ConfigurationError as error:
+        raise SystemExit(str(error)) from None
 
-# On Ready Event
-@bot.event
-async def on_ready():
-    print("Bot is up! Syncing now...")
-
-    cmds = await bot.get_guild(htl_servers["League"]).integrations()
-
-    syncedcommands = await bot.tree.sync()
-    await bot.change_presence(status= discord.Status.online, activity= discord.Game("Handball"))
-
-    commands_list = ""
-    for cmd in syncedcommands:
-        commands_list += "\n    - " + cmd.name
-
-    print("Logged into {} and fully functional with the following commands: {}".format(bot.user.name, commands_list))
+    bot = HandBot(settings)
+    bot.run(settings.token, log_handler=None)
 
 
-# Catch tree errors
-async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
-    embed = discord.Embed(title="Error", description="There was an error processing the command.", color=discord.Color.red())
-    embed.add_field(name= "``Error Description``", value= "*"+str(error)+"*")
-    
-    await interaction.response.send_message(embed= embed, ephemeral=True)
-
-bot.tree.on_error = on_app_command_error
-
-# Run the Bot
-bot.run(token= token)
+if __name__ == "__main__":
+    main()
